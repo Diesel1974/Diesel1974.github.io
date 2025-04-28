@@ -1,11 +1,167 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-gray-100 dark:bg-gray-900">
 <head>
   <meta charset="UTF-8">
-  <title>Welcome to Diesel1974</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S&P 500 Trip-Wire Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
 </head>
-<body>
-  <h1>Hello World!</h1>
-  <p>This is my first GitHub Pages site.</p>
+
+<body class="font-sans text-gray-800 dark:text-gray-200">
+  <div class="container mx-auto p-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-bold text-center flex-1 animate-fadeIn">S&P 500 Trip-Wire Dashboard</h1>
+      <button onclick="toggleDarkMode()" class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition">
+        Toggle Theme
+      </button>
+    </div>
+
+    <p class="text-center text-gray-600 dark:text-gray-400 mb-8 animate-fadeIn delay-300">Monitor key risk indicators for the S&P 500. Updated live.</p>
+
+    <!-- Risk Gauge -->
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8 text-center animate-fadeIn delay-500">
+      <h2 class="text-xl font-semibold mb-4">Overall Risk Level</h2>
+      <span id="risk-level" class="text-3xl font-bold transition-all duration-500">Calculating...</span>
+      <p id="risk-score" class="text-gray-600 dark:text-gray-400 mt-2">Total Score: 0/20</p>
+      <button onclick="fetchData()" class="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition">
+        Refresh Data
+      </button>
+    </div>
+
+    <!-- Trip-Wire Table -->
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate-fadeIn delay-700 overflow-x-auto">
+      <h2 class="text-xl font-semibold mb-4">Trip-Wire Indicators</h2>
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <th class="p-3">Indicator</th>
+            <th class="p-3">Current Value</th>
+            <th class="p-3">Threshold</th>
+            <th class="p-3">Status</th>
+            <th class="p-3">Severity Score</th>
+          </tr>
+        </thead>
+        <tbody id="trip-wire-table"></tbody>
+      </table>
+    </div>
+
+    <!-- Notes -->
+    <div class="mt-8 text-gray-600 dark:text-gray-400 animate-fadeIn delay-1000">
+      <h3 class="text-lg font-semibold">Notes</h3>
+      <p>This dashboard uses live data for VIX pulled from Alpha Vantage.</p>
+    </div>
+
+  </div>
+
+<script>
+function toggleDarkMode() {
+  document.documentElement.classList.toggle('dark');
+}
+
+const indicators = [
+  { name: "Yield-Curve (2s/10s)", current: "-30 bps", threshold: "< -50 bps", value: -30, thresholdValue: -50, check: v => v < -50, severity: 0 },
+  { name: "Leading Economic Index (LEI)", current: "-0.5% MoM", threshold: ">1% drop", value: -0.5, thresholdValue: -1, check: v => v < -1, severity: 0 },
+  { name: "Earnings Guidance", current: "40% negative", threshold: ">50% negative", value: 40, thresholdValue: 50, check: v => v > 50, severity: 0 },
+  { name: "Credit Spreads (IG)", current: "120 bps", threshold: ">150 bps", value: 120, thresholdValue: 150, check: v => v > 150, severity: 0 },
+  { name: "VIX", current: "18", threshold: ">25 for 3 days", value: 18, thresholdValue: 25, check: v => v > 25, severity: 0 },
+  { name: "Market Breadth", current: "1.2:1 highs/lows", threshold: ">2:1 lows/highs", value: 1.2, thresholdValue: 2, check: v => v > 2, severity: 0 },
+  { name: "Fund Flows", current: "$2B inflows", threshold: ">$10B outflows", value: 2, thresholdValue: -10, check: v => v < -10, severity: 0 },
+  { name: "Fed Policy", current: "Neutral", threshold: "Hawkish", value: 0, thresholdValue: 1, check: v => v >= 1, severity: 0 },
+  { name: "Core CPI", current: "2.8%", threshold: ">3%", value: 2.8, thresholdValue: 3, check: v => v > 3, severity: 0 },
+  { name: "Trade Escalations", current: "Current tariffs", threshold: "New tariffs", value: 0, thresholdValue: 1, check: v => v >= 1, severity: 0 },
+];
+
+async function fetchData() {
+  const apiKey = "24C19NQFT0CEY88B";
+
+  try {
+    const vixResponse = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=VIXY&apikey=${apiKey}`);
+    const vixData = await vixResponse.json();
+    const vixPrice = parseFloat(vixData["Global Quote"]["05. price"]);
+
+    if (!isNaN(vixPrice)) {
+      const vixIndicator = indicators.find(ind => ind.name === "VIX");
+      if (vixIndicator) {
+        vixIndicator.current = `${vixPrice.toFixed(2)}`;
+        vixIndicator.value = vixPrice;
+      }
+    } else {
+      console.error("VIX data not found:", vixData);
+    }
+
+    updateDashboard();
+  } catch (error) {
+    console.error("Error fetching VIX data:", error);
+    alert("Failed to fetch live data. Try again later.");
+  }
+}
+
+function updateDashboard() {
+  const tableBody = document.getElementById("trip-wire-table");
+  tableBody.innerHTML = "";
+  let totalScore = 0;
+
+  indicators.forEach(indicator => {
+    const isTriggered = indicator.check(indicator.value);
+    indicator.severity = isTriggered ? (indicator.value > indicator.thresholdValue * 1.5 ? 2 : 1) : 0;
+    totalScore += indicator.severity;
+
+    const statusText = indicator.severity === 0 ? "Safe" : indicator.severity === 1 ? "Caution" : "Alert";
+    const statusClasses = indicator.severity === 0 ? "bg-green-200 text-green-800" :
+                           indicator.severity === 1 ? "bg-yellow-200 text-yellow-800" :
+                           "bg-red-200 text-red-800 animate-pulse";
+
+    const row = document.createElement("tr");
+    row.className = "hover:bg-gray-100 dark:hover:bg-gray-700 transition";
+    row.innerHTML = `
+      <td class="p-3">${indicator.name}</td>
+      <td class="p-3">${indicator.current}</td>
+      <td class="p-3">${indicator.threshold}</td>
+      <td class="p-3">
+        <span class="px-2 py-1 rounded ${statusClasses}">
+          ${statusText}
+        </span>
+      </td>
+      <td class="p-3">${indicator.severity}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+
+  const riskLevel = totalScore <= 5 ? "Mild Caution" :
+                    totalScore <= 10 ? "Meaningful Caution" : "Red Alert";
+  const riskColor = totalScore <= 5 ? "text-green-600" :
+                    totalScore <= 10 ? "text-yellow-500" : "text-red-600";
+
+  const riskLevelEl = document.getElementById("risk-level");
+  riskLevelEl.textContent = riskLevel;
+  riskLevelEl.className = `text-3xl font-bold transition-all duration-500 ${riskColor}`;
+
+  document.getElementById("risk-score").textContent = `Total Score: ${totalScore}/20`;
+}
+
+fetchData();
+</script>
+
+<style>
+.animate-fadeIn {
+  animation: fadeIn 1s ease-in forwards;
+  opacity: 0;
+}
+.delay-300 { animation-delay: 0.3s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-1000 { animation-delay: 1s; }
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+</style>
+
 </body>
 </html>
