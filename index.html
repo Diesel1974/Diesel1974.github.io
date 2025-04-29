@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>S&P 500 Trip-Wire Dashboard</title>
+  <title>S&amp;P 500 Trip-Wire Dashboard</title>
   <!-- TailwindCSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans">
 
   <div class="container mx-auto p-6">
-    <h1 class="text-3xl font-bold text-center mb-6">S&P 500 Trip-Wire Dashboard</h1>
-    <p class="text-center text-gray-600 mb-8">Monitor key risk indicators for the S&P 500. Updated live.</p>
+    <h1 class="text-3xl font-bold text-center mb-6">S&amp;P 500 Trip-Wire Dashboard</h1>
+    <p class="text-center text-gray-600 mb-8">Monitor key risk indicators for the S&amp;P 500. Updated live.</p>
 
     <!-- Overall Risk Level -->
     <div class="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -52,134 +52,100 @@
     </div>
   </div>
 
-  <!-- All your JavaScript in one <script> block -->
+  <!-- All JavaScript in a single <script> block -->
   <script>
-    // 1) Define all indicators up front
+    // 1) Indicators definition
     const indicators = [
-      { name: "Yield-Curve (2s/10s)", current: "-30 bps", threshold: "< -50 bps",
-        value: -30, thresholdValue: -50, check: v=>v < -50, severity: 0 },
-      { name: "Leading Economic Index (LEI)", current: "-0.5% MoM", threshold: ">1% drop",
-        value: -0.5, thresholdValue: -1, check: v=>v < -1, severity: 0 },
-      { name: "Earnings Guidance", current: "40% negative", threshold: ">50% negative",
-        value: 40, thresholdValue: 50, check: v=>v > 50, severity: 0 },
-      { name: "Credit Spreads (IG)", current: "120 bps", threshold: ">150 bps",
-        value: 120, thresholdValue: 150, check: v=>v > 150, severity: 0 },
-      { name: "VIX", current: "18", threshold: ">25 for 3 days",
-        value: 18, thresholdValue: 25, check: v=>v > 25, severity: 0 },
-      { name: "Market Breadth", current: "1.2:1 highs/lows", threshold: ">2:1 lows/highs",
-        value: 1.2, thresholdValue: 2, check: v=>v > 2, severity: 0 },
-      { name: "Fund Flows", current: "$2B inflows", threshold: ">$10B outflows",
-        value: 2, thresholdValue: -10, check: v=>v < -10, severity: 0 },
-      { name: "Fed Policy", current: "Neutral", threshold: "Hawkish",
-        value: 0, thresholdValue: 1, check: v=>v >= 1, severity: 0 },
-      { name: "Core CPI", current: "2.8%", threshold: ">3%",
-        value: 2.8, thresholdValue: 3, check: v=>v > 3, severity: 0 },
-      { name: "Trade Escalations", current: "Current tariffs", threshold: "New tariffs",
-        value: 0, thresholdValue: 1, check: v=>v >= 1, severity: 0 },
+      { name: "Yield-Curve (2s/10s)", current: "-30 bps", threshold: "< -50 bps", value: -30, thresholdValue: -50, check: v=>v<-50, severity:0 },
+      { name: "Leading Economic Index (LEI)", current: "-0.5% MoM", threshold: ">1% drop", value: -0.5, thresholdValue: -1, check: v=>v<-1, severity:0 },
+      { name: "Earnings Guidance", current: "40% negative", threshold: ">50% negative", value:40, thresholdValue:50, check: v=>v>50, severity:0 },
+      { name: "Credit Spreads (IG)", current: "120 bps", threshold: ">150 bps", value:120, thresholdValue:150, check: v=>v>150, severity:0 },
+      { name: "VIX", current: "18", threshold: ">25 for 3 days", value:18, thresholdValue:25, check: v=>v>25, severity:0 },
+      { name: "Market Breadth", current: "1.2:1 highs/lows", threshold: ">2:1 lows/highs", value:1.2, thresholdValue:2, check: v=>v>2, severity:0 },
+      { name: "Fund Flows", current: "$2B inflows", threshold: ">$10B outflows", value:2, thresholdValue:-10, check: v=>v<-10, severity:0 },
+      { name: "Fed Policy", current: "Neutral", threshold: "Hawkish", value:0, thresholdValue:1, check: v=>v>=1, severity:0 },
+      { name: "Core CPI", current: "2.8%", threshold: ">3%", value:2.8, thresholdValue:3, check: v=>v>3, severity:0 },
+      { name: "Trade Escalations", current: "Current tariffs", threshold: "New tariffs", value:0, thresholdValue:1, check: v=>v>=1, severity:0 },
     ];
 
-    // 2) Pull live data and update the indicators array
+    // 2) Fetch live data & update indicators
     async function fetchData() {
       const alphaKey = "24C19NQFT0CEY88B";                // AlphaVantage
       const fredKey  = "d49ebc25ed38d212a6a4b8af90abcedf"; // FRED
 
       try {
-        // — VIX via AlphaVantage (VIXY ETF proxy)
+        // VIX (via VIXY)
         let r = await fetch(
           `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=VIXY&apikey=${alphaKey}`
         );
-        let data = await r.json();
-        let v = parseFloat(data["Global Quote"]["05. price"]);
-        if (!isNaN(v)) {
-          let ind = indicators.find(i=>i.name==="VIX");
-          ind.current = `${v.toFixed(2)}`; ind.value = v;
+        let j = await r.json();
+        let v = parseFloat(j["Global Quote"]["05. price"]);
+        if(!isNaN(v)) {
+          let i = indicators.find(x=>x.name==="VIX");
+          i.current = `${v.toFixed(2)}`; i.value = v;
         }
 
-        // — 10-Year Treasury via FRED
+        // 10Y Treasury
         r = await fetch(
           `https://api.stlouisfed.org/fred/series/observations`
           + `?series_id=GS10&api_key=${fredKey}&file_type=json&sort_order=desc`
         );
-        data = await r.json();
-        let y10 = parseFloat(data.observations[0].value);
+        j = await r.json();
+        let y10 = parseFloat(j.observations[0].value);
 
-        // — 2-Year Treasury via FRED
+        // 2Y Treasury
         r = await fetch(
           `https://api.stlouisfed.org/fred/series/observations`
           + `?series_id=GS2&api_key=${fredKey}&file_type=json&sort_order=desc`
         );
-        data = await r.json();
-        let y2 = parseFloat(data.observations[0].value);
+        j = await r.json();
+        let y2 = parseFloat(j.observations[0].value);
 
-        // — Calculate 2s/10s spread
-        if (!isNaN(y10) && !isNaN(y2)) {
+        if(!isNaN(y10) && !isNaN(y2)) {
           let spread = y10 - y2;
-          let ind = indicators.find(i=>i.name.includes("Yield-Curve"));
-          ind.current = `${spread.toFixed(2)} bps`;
-          ind.value = spread;
+          let i = indicators.find(x=>x.name.includes("Yield-Curve"));
+          i.current = `${spread.toFixed(2)} bps`; i.value = spread;
         }
 
-        // Finally, redraw the table & risk gauge
+        // redraw
         updateDashboard();
-
-      } catch(e) {
+      }
+      catch(e){
         console.error("Fetch error:", e);
         alert("Failed to fetch live data. Try again later.");
       }
     }
 
-    // 3) Render the table & compute overall risk
+    // 3) Render table + risk gauge
     function updateDashboard() {
-      const tbody = document.getElementById("trip-wire-table");
+      let tbody = document.getElementById("trip-wire-table");
       tbody.innerHTML = "";
-      let score = 0;
+      let total=0;
 
       indicators.forEach(ind => {
-        // severity = 0, 1 or 2
         ind.severity = ind.check(ind.value)
-          ? (ind.value > ind.thresholdValue * 1.5 ? 2 : 1)
+          ? (ind.value > ind.thresholdValue*1.5 ? 2 : 1)
           : 0;
-        score += ind.severity;
+        total += ind.severity;
 
-        let statusText    = ind.severity===0 ? "Safe" 
-                           : ind.severity===1 ? "Caution" 
-                           : "Alert";
-        let statusClasses = ind.severity===0
+        let text = ind.severity===0 ? "Safe" : ind.severity===1 ? "Caution" : "Alert";
+        let cls  = ind.severity===0
           ? "bg-green-200 text-green-800"
           : ind.severity===1
             ? "bg-yellow-200 text-yellow-800"
             : "bg-red-200 text-red-800";
 
-        let row = document.createElement("tr");
-        row.innerHTML = `
+        let tr = document.createElement("tr");
+        tr.innerHTML=`
           <td class="p-3">${ind.name}</td>
           <td class="p-3">${ind.current}</td>
           <td class="p-3">${ind.threshold}</td>
           <td class="p-3">
-            <span class="px-2 py-1 rounded ${statusClasses}">${statusText}</span>
+            <span class="px-2 py-1 rounded ${cls}">${text}</span>
           </td>
-          <td class="p-3">${ind.severity}</td>
-        `;
-        tbody.appendChild(row);
+          <td class="p-3">${ind.severity}</td>`;
+        tbody.appendChild(tr);
       });
 
-      // Risk gauge text & color
-      let level = score <=5  ? "Mild Caution" 
-                : score <=10 ? "Meaningful Caution" 
-                : "Red Alert";
-      let color = score <=5  ? "text-green-600" 
-                : score <=10 ? "text-yellow-600" 
-                : "text-red-600";
-
-      let rl = document.getElementById("risk-level");
-      rl.textContent = level;
-      rl.className   = `text-2xl font-bold ${color}`;
-      document.getElementById("risk-score").textContent = `Total Score: ${score}/20`;
-    }
-
-    // 4) Auto-run on page load
-    fetchData();
-  </script>
-
-</body>
-</html>
+      let lvl = total<=5  ? "Mild Caution"
+              : total<=10 ? "Meaningful
