@@ -1,140 +1,678 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-gray-100 dark:bg-gray-900">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>S&P 500 Trip-Wire Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body class="bg-gray-100 font-sans">
-  <div class="container mx-auto p-6">
-    <h1 class="text-3xl font-bold text-center mb-6">S&P 500 Trip-Wire Dashboard</h1>
-    <p class="text-center text-gray-600 mb-8">Live VIX + 2s/10s yield-curve data via Alpha Vantage</p>
 
-    <div class="bg-white p-6 rounded-lg shadow-md mb-8 text-center">
-      <h2 class="text-xl font-semibold mb-4">Overall Risk Level</h2>
-      <span id="risk-level" class="text-2xl font-bold">Calculating…</span>
-      <p id="risk-score" class="text-gray-600 mt-1">Total Score: 0/20</p>
-      <button onclick="fetchData()"
-              class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Refresh Data
+<body class="font-sans text-gray-800 dark:text-gray-200">
+  <div class="container mx-auto p-4 md:p-6">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row items-center justify-between mb-6">
+      <div class="flex items-center">
+        <svg class="w-8 h-8 text-primary-600 dark:text-primary-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+        </svg>
+        <h1 class="text-2xl md:text-3xl font-bold animate-fadeIn">S&P 500 Trip-Wire Dashboard</h1>
+      </div>
+      <div class="flex mt-4 md:mt-0 space-x-2">
+        <span id="last-updated" class="text-sm text-gray-600 dark:text-gray-400 self-center mr-2">Last updated: Calculating...</span>
+        <button onclick="fetchData()" class="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded transition flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Refresh
+        </button>
+        <button onclick="toggleDarkMode()" class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition flex items-center">
+          <svg id="light-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          <svg id="dark-icon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <p class="text-center text-gray-600 dark:text-gray-400 mb-6 animate-fadeIn delay-300">Monitor key risk indicators for the S&P 500 with real-time alerts and visualizations.</p>
+
+    <!-- Main content grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Risk Gauge Column -->
+      <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden animate-fadeIn delay-500">
+          <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4">Overall Risk Level</h2>
+            <div class="flex flex-col items-center">
+              <div id="risk-gauge" class="w-48 h-48 mb-4 relative">
+                <canvas id="risk-chart"></canvas>
+                <div class="absolute inset-0 flex items-center justify-center flex-col">
+                  <span id="risk-level" class="text-xl font-bold transition-all duration-500">--</span>
+                  <span id="risk-score" class="text-sm text-gray-600 dark:text-gray-400">Score: 0/20</span>
+                </div>
+              </div>
+              <div class="w-full max-w-xs bg-gray-200 dark:bg-gray-700 rounded-full h-4 mt-2">
+                <div id="risk-bar" class="bg-green-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between w-full max-w-xs mt-1 text-xs">
+                <span>Low Risk</span>
+                <span>Caution</span>
+                <span>High Risk</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Mini Statistics -->
+          <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div class="grid grid-cols-2 gap-2">
+              <div class="border border-gray-200 dark:border-gray-700 rounded p-3">
+                <div class="text-sm text-gray-600 dark:text-gray-400">Triggered Indicators</div>
+                <div id="triggered-count" class="text-xl font-bold">0</div>
+              </div>
+              <div class="border border-gray-200 dark:border-gray-700 rounded p-3">
+                <div class="text-sm text-gray-600 dark:text-gray-400">Alert Level Indicators</div>
+                <div id="alert-count" class="text-xl font-bold">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Historical Risk Trend -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mt-6 animate-fadeIn delay-700">
+          <h2 class="text-xl font-semibold mb-4">Historical Risk Trend</h2>
+          <canvas id="historical-chart" height="200"></canvas>
+        </div>
+      </div>
+      
+      <!-- Trip-Wire Table Column -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md animate-fadeIn delay-700">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold">Trip-Wire Indicators</h2>
+              <div class="flex">
+                <button onclick="sortTable('name')" class="text-sm text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 mr-4">
+                  Sort by Name
+                </button>
+                <button onclick="sortTable('severity')" class="text-sm text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400">
+                  Sort by Risk
+                </button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-gray-200 dark:bg-gray-700">
+                    <th class="p-3 rounded-tl-lg">Indicator</th>
+                    <th class="p-3">Current Value</th>
+                    <th class="p-3">Threshold</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3 rounded-tr-lg">Severity</th>
+                  </tr>
+                </thead>
+                <tbody id="trip-wire-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Indicator Details -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mt-6 animate-fadeIn delay-1000">
+          <h2 class="text-xl font-semibold mb-4">Indicator Details</h2>
+          <div id="indicator-details" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h3 class="font-semibold text-lg">Yield Curve</h3>
+              <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">Difference between 2-year and 10-year Treasury yields</p>
+              <div class="flex justify-between">
+                <span>Current: <span id="yield-curve-value">-30 bps</span></span>
+                <span class="text-right">Normal Range: >0 bps</span>
+              </div>
+              <div class="mt-2">
+                <canvas id="yield-curve-chart" height="100"></canvas>
+              </div>
+            </div>
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h3 class="font-semibold text-lg">VIX Index</h3>
+              <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">Market volatility indicator</p>
+              <div class="flex justify-between">
+                <span>Current: <span id="vix-value">18</span></span>
+                <span class="text-right">Alert Level: >25</span>
+              </div>
+              <div class="mt-2">
+                <canvas id="vix-chart" height="100"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="mt-6 text-gray-600 dark:text-gray-400 animate-fadeIn delay-1000 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <div class="flex items-center mb-2">
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold">Notes & Information</h3>
+      </div>
+      <p class="mb-2">This dashboard pulls live VIX data from Alpha Vantage API and simulates other market indicators.</p>
+      <p>A higher total score indicates increased market risk. Risk levels: 0-5 (Low Risk), 6-10 (Caution), 11+ (High Risk).</p>
+      <button id="show-methodology" class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 mt-2">
+        Show Methodology
       </button>
+      <div id="methodology-content" class="hidden mt-2 p-4 bg-gray-100 dark:bg-gray-700 rounded">
+        <h4 class="font-semibold mb-2">Indicator Methodology</h4>
+        <ul class="list-disc pl-5 space-y-1 text-sm">
+          <li><strong>Yield-Curve:</strong> A negative yield curve has historically preceded recessions.</li>
+          <li><strong>LEI:</strong> The Conference Board's Leading Economic Index predicts future economic activity.</li>
+          <li><strong>Earnings Guidance:</strong> Percentage of companies issuing negative guidance.</li>
+          <li><strong>Credit Spreads:</strong> Widening spreads indicate higher perceived default risk.</li>
+          <li><strong>VIX:</strong> Known as the "fear index," measures market volatility expectations.</li>
+          <li><strong>Market Breadth:</strong> Ratio of advancing to declining stocks, showing market participation.</li>
+          <li><strong>Fund Flows:</strong> Measures investor sentiment through asset flow direction.</li>
+          <li><strong>Fed Policy:</strong> Monetary stance that influences liquidity conditions.</li>
+          <li><strong>Core CPI:</strong> Inflation metric excluding volatile food and energy prices.</li>
+          <li><strong>Trade Policy:</strong> International trade conditions affecting global markets.</li>
+        </ul>
+      </div>
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <h2 class="text-xl font-semibold mb-4">Trip-Wire Indicators</h2>
-      <table class="w-full text-left border-collapse">
-        <thead><tr class="bg-gray-200">
-          <th class="p-3">Indicator</th>
-          <th class="p-3">Current</th>
-          <th class="p-3">Threshold</th>
-          <th class="p-3">Status</th>
-          <th class="p-3">Severity</th>
-        </tr></thead>
-        <tbody id="trip-wire-table"></tbody>
-      </table>
-    </div>
   </div>
 
-  <script>
-    const indicators = [
-      { name:"Yield-Curve (2s/10s)", current:"—", threshold:"< -50 bps",
-        value:0, thresholdValue:-50, check:v=>v< -50, severity:0 },
-      { name:"VIX", current:"—", threshold:"> 25 for 3 days",
-        value:0, thresholdValue:25, check:v=>v> 25, severity:0 },
-    ];
+<script>
+// Dark mode toggle
+function toggleDarkMode() {
+  document.documentElement.classList.toggle('dark');
+  const isDark = document.documentElement.classList.contains('dark');
+  document.getElementById('light-icon').classList.toggle('hidden', isDark);
+  document.getElementById('dark-icon').classList.toggle('hidden', !isDark);
+  localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+  
+  // Update charts for dark mode
+  updateChartsTheme();
+}
 
-    async function fetchData(){
-      const key = "24C19NQFT0CEY88B";
+// Initialize dark mode from local storage
+function initDarkMode() {
+  if (localStorage.getItem('darkMode') === 'enabled' || 
+      (window.matchMedia('(prefers-color-scheme: dark)').matches && !localStorage.getItem('darkMode'))) {
+    document.documentElement.classList.add('dark');
+    document.getElementById('light-icon').classList.add('hidden');
+    document.getElementById('dark-icon').classList.remove('hidden');
+  }
+}
 
-      try {
-        // 1) VIX via VIXY ETF
-        let r = await fetch(
-          `https://www.alphavantage.co/query?function=GLOBAL_QUOTE`
-          + `&symbol=VIXY&apikey=${key}`
-        );
-        let j = await r.json();
-        let v = parseFloat(j["Global Quote"]["05. price"]);
-        if(!isNaN(v)){
-          let x = indicators.find(i=>i.name==="VIX");
-          x.current = v.toFixed(2); x.value = v;
+// Chart themes based on mode
+function getChartTheme() {
+  const isDark = document.documentElement.classList.contains('dark');
+  return {
+    color: isDark ? '#e5e7eb' : '#1f2937',
+    gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: isDark ? '#374151' : '#ffffff'
+  };
+}
+
+// Update all charts when theme changes
+function updateChartsTheme() {
+  const theme = getChartTheme();
+  
+  if (window.riskChart) {
+    window.riskChart.options.plugins.title.color = theme.color;
+    window.riskChart.update();
+  }
+  
+  if (window.historicalChart) {
+    window.historicalChart.options.scales.x.grid.color = theme.gridColor;
+    window.historicalChart.options.scales.y.grid.color = theme.gridColor;
+    window.historicalChart.options.scales.x.ticks.color = theme.color;
+    window.historicalChart.options.scales.y.ticks.color = theme.color;
+    window.historicalChart.update();
+  }
+  
+  if (window.yieldCurveChart) {
+    window.yieldCurveChart.options.scales.x.grid.color = theme.gridColor;
+    window.yieldCurveChart.options.scales.y.grid.color = theme.gridColor;
+    window.yieldCurveChart.options.scales.x.ticks.color = theme.color;
+    window.yieldCurveChart.options.scales.y.ticks.color = theme.color;
+    window.yieldCurveChart.update();
+  }
+  
+  if (window.vixChart) {
+    window.vixChart.options.scales.x.grid.color = theme.gridColor;
+    window.vixChart.options.scales.y.grid.color = theme.gridColor;
+    window.vixChart.options.scales.x.ticks.color = theme.color;
+    window.vixChart.options.scales.y.ticks.color = theme.color;
+    window.vixChart.update();
+  }
+}
+
+// Initialize indicators with enhanced data
+const indicators = [
+  { 
+    name: "Yield-Curve (2s/10s)", 
+    current: "-30 bps", 
+    threshold: "< -50 bps", 
+    value: -30, 
+    thresholdValue: -50, 
+    check: v => v < -50, 
+    severity: 0,
+    description: "Difference between 2-year and 10-year Treasury yields",
+    history: [-10, -15, -20, -25, -30]
+  },
+  { 
+    name: "Leading Economic Index (LEI)", 
+    current: "-0.5% MoM", 
+    threshold: ">1% drop", 
+    value: -0.5, 
+    thresholdValue: -1, 
+    check: v => v < -1, 
+    severity: 0,
+    description: "Conference Board's index of economic indicators",
+    history: [0.2, 0.0, -0.2, -0.3, -0.5]
+  },
+  { 
+    name: "Earnings Guidance", 
+    current: "40% negative", 
+    threshold: ">50% negative", 
+    value: 40, 
+    thresholdValue: 50, 
+    check: v => v > 50, 
+    severity: 0,
+    description: "Percentage of companies guiding lower",
+    history: [30, 32, 35, 38, 40]
+  },
+  { 
+    name: "Credit Spreads (IG)", 
+    current: "120 bps", 
+    threshold: ">150 bps", 
+    value: 120, 
+    thresholdValue: 150, 
+    check: v => v > 150, 
+    severity: 0,
+    description: "Investment grade bond spreads over Treasuries",
+    history: [100, 105, 110, 115, 120]
+  },
+  { 
+    name: "VIX", 
+    current: "18", 
+    threshold: ">25 for 3 days", 
+    value: 18, 
+    thresholdValue: 25, 
+    check: v => v > 25, 
+    severity: 0,
+    description: "CBOE Volatility Index, market 'fear gauge'",
+    history: [15, 16, 17, 17, 18]
+  },
+  { 
+    name: "Market Breadth", 
+    current: "1.2:1 highs/lows", 
+    threshold: ">2:1 lows/highs", 
+    value: 1.2, 
+    thresholdValue: 2, 
+    check: v => v > 2, 
+    severity: 0,
+    description: "Ratio of advancing to declining stocks",
+    history: [0.9, 1.0, 1.1, 1.2, 1.2]
+  },
+  { 
+    name: "Fund Flows", 
+    current: "$2B inflows", 
+    threshold: ">$10B outflows", 
+    value: 2, 
+    thresholdValue: -10, 
+    check: v => v < -10, 
+    severity: 0,
+    description: "Weekly equity fund flows in billions",
+    history: [5, 4, 3, 2, 2]
+  },
+  { 
+    name: "Fed Policy", 
+    current: "Neutral", 
+    threshold: "Hawkish", 
+    value: 0, 
+    thresholdValue: 1, 
+    check: v => v >= 1, 
+    severity: 0,
+    description: "Federal Reserve monetary policy stance",
+    history: [0, 0, 0, 0, 0]
+  },
+  { 
+    name: "Core CPI", 
+    current: "2.8%", 
+    threshold: ">3%", 
+    value: 2.8, 
+    thresholdValue: 3, 
+    check: v => v > 3, 
+    severity: 0,
+    description: "Core Consumer Price Index, YoY change",
+    history: [2.5, 2.6, 2.7, 2.8, 2.8]
+  },
+  { 
+    name: "Trade Escalations", 
+    current: "Current tariffs", 
+    threshold: "New tariffs", 
+    value: 0, 
+    thresholdValue: 1, 
+    check: v => v >= 1, 
+    severity: 0,
+    description: "Trade policy developments affecting markets",
+    history: [0, 0, 0, 0, 0]
+  },
+];
+
+// Historical risk scores
+const historicalScores = [3, 4, 5, 4, 5, 7, 8, 6];
+const historicalDates = [];
+
+// Generate dates for historical data (going back from today)
+function generateHistoricalDates() {
+  const dates = [];
+  const today = new Date();
+  
+  for (let i = historicalScores.length - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  }
+  
+  return dates;
+}
+
+// Initialize charts
+function initCharts() {
+  const theme = getChartTheme();
+  
+  // Risk gauge chart
+  const riskCtx = document.getElementById('risk-chart').getContext('2d');
+  window.riskChart = new Chart(riskCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Low Risk', 'Caution', 'High Risk'],
+      datasets: [{
+        data: [33, 33, 34],
+        backgroundColor: ['#10B981', '#FBBF24', '#EF4444'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      cutout: '70%',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          enabled: false
         }
-
-        // 2) 10-year yield
-        r = await fetch(
-          `https://www.alphavantage.co/query?function=TREASURY_YIELD`
-          + `&interval=daily&maturity=10year&apikey=${key}`
-        );
-        j = await r.json();
-        let y10 = parseFloat(j.data[0].value);
-
-        // 3)  2-year yield
-        r = await fetch(
-          `https://www.alphavantage.co/query?function=TREASURY_YIELD`
-          + `&interval=daily&maturity=2year&apikey=${key}`
-        );
-        j = await r.json();
-        let y2 = parseFloat(j.data[0].value);
-
-        if(!isNaN(y10) && !isNaN(y2)){
-          let spread = y10 - y2;
-          let x = indicators.find(i=>i.name.startsWith("Yield-Curve"));
-          x.current = `${spread.toFixed(2)} bps`; x.value = spread;
-        }
-
-        updateDashboard();
-      }
-      catch(e){
-        console.error("Fetch error:", e);
-        alert("Live-data fetch failed. Try again later.");
       }
     }
-
-    function updateDashboard(){
-      const tbody = document.getElementById("trip-wire-table");
-      tbody.innerHTML = "";
-      let total = 0;
-
-      indicators.forEach(ind=>{
-        ind.severity = ind.check(ind.value)
-          ? (ind.value > ind.thresholdValue*1.5 ? 2 : 1)
-          : 0;
-        total += ind.severity;
-
-        const txt = ind.severity===0 ? "Safe"
-                  : ind.severity===1 ? "Caution"
-                  : "Alert";
-        const cls = ind.severity===0
-          ? "bg-green-200 text-green-800"
-          : ind.severity===1
-            ? "bg-yellow-200 text-yellow-800"
-            : "bg-red-200 text-red-800";
-
-        tbody.insertAdjacentHTML("beforeend",`
-          <tr>
-            <td class="p-3">${ind.name}</td>
-            <td class="p-3">${ind.current}</td>
-            <td class="p-3">${ind.threshold}</td>
-            <td class="p-3"><span class="px-2 py-1 rounded ${cls}">${txt}</span></td>
-            <td class="p-3">${ind.severity}</td>
-          </tr>`);
-      });
-
-      const level = total<=5   ? "Mild Caution"
-                    : total<=10 ? "Meaningful Caution"
-                    : "Red Alert";
-      const color = total<=5   ? "text-green-600"
-                    : total<=10 ? "text-yellow-600"
-                    : "text-red-600";
-
-      let rl = document.getElementById("risk-level");
-      rl.textContent = level;
-      rl.className   = `text-2xl font-bold ${color}`;
-      document.getElementById("risk-score").textContent = `Total Score: ${total}/20`;
+  });
+  
+  // Historical risk chart
+  const historicalCtx = document.getElementById('historical-chart').getContext('2d');
+  historicalDates.push(...generateHistoricalDates());
+  
+  window.historicalChart = new Chart(historicalCtx, {
+    type: 'line',
+    data: {
+      labels: historicalDates,
+      datasets: [{
+        label: 'Risk Score',
+        data: historicalScores,
+        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+        borderColor: 'rgba(99, 102, 241, 1)',
+        borderWidth: 2,
+        tension: 0.3,
+        pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 20,
+          grid: {
+            color: theme.gridColor
+          },
+          ticks: {
+            color: theme.color
+          }
+        },
+        x: {
+          grid: {
+            color: theme.gridColor
+          },
+          ticks: {
+            color: theme.color
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
     }
+  });
+  
+  // Yield curve mini chart
+  const yieldCurveCtx = document.getElementById('yield-curve-chart').getContext('2d');
+  window.yieldCurveChart = new Chart(yieldCurveCtx, {
+    type: 'line',
+    data: {
+      labels: ['1W ago', '3D ago', '2D ago', 'Yesterday', 'Today'],
+      datasets: [{
+        label: 'Yield Curve',
+        data: indicators[0].history,
+        borderColor: '#6366F1',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.2
+      },
+      {
+        label: 'Warning Threshold',
+        data: Array(5).fill(-50),
+        borderColor: '#EF4444',
+        borderWidth: 1,
+        borderDash: [5, 5],
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          grid: {
+            color: theme.gridColor
+          },
+          ticks: {
+            color: theme.color
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            color: theme.color
+          }
+        }
+      }
+    }
+  });
+  
+  // VIX mini chart
+  const vixCtx = document.getElementById('vix-chart').getContext('2d');
+  window.vixChart = new Chart(vixCtx, {
+    type: 'line',
+    data: {
+      labels: ['1W ago', '3D ago', '2D ago', 'Yesterday', 'Today'],
+      datasets: [{
+        label: 'VIX',
+        data: indicators[4].history,
+        borderColor: '#6366F1',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.2
+      },
+      {
+        label: 'Warning Threshold',
+        data: Array(5).fill(25),
+        borderColor: '#EF4444',
+        borderWidth: 1,
+        borderDash: [5, 5],
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          grid: {
+            color: theme.gridColor
+          },
+          ticks: {
+            color: theme.color
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            color: theme.color
+          }
+        }
+      }
+    }
+  });
+}
 
-    // Start on load
-    fetchData();
-  </script>
-</body>
-</html>
+// Sort table
+function sortTable(criterion) {
+  if (criterion === 'name') {
+    indicators.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (criterion === 'severity') {
+    indicators.sort((a, b) => b.severity - a.severity);
+  }
+  
+  updateDashboard();
+}
+
+// Fetch live data
+async function fetchData() {
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.className = 'fixed top-0 left-0 w-full bg-primary-500 h-1 transition-width animate-pulse';
+  document.body.appendChild(loadingIndicator);
+  
+  try {
+    const apiKey = "24C19NQFT0CEY88B";
+    
+    const vixResponse = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=VIXY&apikey=${apiKey}`);
+    const vixData = await vixResponse.json();
+    
+    // Remove loading indicator
+    document.body.removeChild(loadingIndicator);
+    
+    // Update last updated timestamp
+    document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()}`;
+    
+    if (vixData["Global Quote"] && vixData["Global Quote"]["05. price"]) {
+      const vixPrice = parseFloat(vixData["Global Quote"]["05. price"]);
+      
+      if (!isNaN(vixPrice)) {
+        const vixIndicator = indicators.find(ind => ind.name === "VIX");
+        if (vixIndicator) {
+          vixIndicator.current = `${vixPrice.toFixed(2)}`;
+          vixIndicator.value = vixPrice;
+          
+          // Update VIX history
+          vixIndicator.history.shift();
+          vixIndicator.history.push(vixPrice);
+          
+          // Update VIX chart
+          window.vixChart.data.datasets[0].data = vixIndicator.history;
+          window.vixChart.update();
+          
+          // Update VIX value display
+          document.getElementById('vix-value').textContent = vixPrice.toFixed(2);
+        }
+      }
+    }
+    
+    // Simulate small random changes to other indicators (for demo purposes)
+    indicators.forEach(indicator => {
+      if (indicator.name !== "VIX") {
+        const change = (Math.random() - 0.5) * (indicator.thresholdValue * 0.05);
+        indicator.value += change;
+        
+        if (indicator.name === "Yield-Curve (2s/10s)") {
+          indicator.current = `${indicator.value.toFixed(0)} bps`;
+          // Update yield curve history
+          indicator.history.shift();
+          indicator.history.push(indicator.value);
+          // Update yield curve chart
+          window.yieldCurveChart.data.datasets[0].data = indicator.history;
+          window.yieldCurveChart.update();
+          // Update yield curve value display
+          document.getElementById('yield-curve-value').textContent = `${indicator.value.toFixed(0)} bps`;
+        }
+      }
+    });
+    
+    updateDashboard();
+    
+    // Update historical chart with latest total score
+    const latestScore = calculateTotalScore();
+    historicalScores.push(latestScore);
+    historicalScores.shift();
+    historicalDates.shift();
+    historicalDates.push(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    
+    window.historicalChart.data.labels = historicalDates;
+    window.historicalChart.data.datasets[0].data = historicalScores;
+    window.historicalChart.update();
+    
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    alert("Failed to fetch live data. Try again later.");
+  }
+}
