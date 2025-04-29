@@ -2,162 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>S&P 500 Trip-Wire Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans">
+<div class="container mx-auto p-6">
+  <h1 class="text-3xl font-bold text-center mb-6">S&amp;P 500 Trip-Wire Dashboard</h1>
+  <p class="text-center text-gray-600 mb-8">Live VIX + 2s/10s yield-curve data (Alpha Vantage).</p>
 
-  <div class="container mx-auto p-6">
-    <h1 class="text-3xl font-bold text-center mb-6">S&P 500 Trip-Wire Dashboard</h1>
-    <p class="text-center text-gray-600 mb-8">Monitor key risk indicators for the S&P 500. Updated live.</p>
-
-    <!-- Overall Risk Level -->
-    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-      <h2 class="text-xl font-semibold mb-4">Overall Risk Level</h2>
-      <div id="risk-gauge" class="text-center">
-        <span id="risk-level" class="text-2xl font-bold">Calculating...</span>
-        <p id="risk-score" class="text-gray-600 mt-1">Total Score: 0/20</p>
-      </div>
-      <div class="text-center mt-4">
-        <button onclick="fetchData()"
-                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          Refresh Data
-        </button>
-      </div>
-    </div>
-
-    <!-- Trip-Wire Table -->
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <h2 class="text-xl font-semibold mb-4">Trip-Wire Indicators</h2>
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-gray-200">
-            <th class="p-3">Indicator</th>
-            <th class="p-3">Current Value</th>
-            <th class="p-3">Threshold</th>
-            <th class="p-3">Status</th>
-            <th class="p-3">Severity Score</th>
-          </tr>
-        </thead>
-        <tbody id="trip-wire-table"></tbody>
-      </table>
-    </div>
-
-    <!-- Notes -->
-    <div class="mt-8 text-gray-600 text-sm">
-      <h3 class="text-lg font-semibold">Notes</h3>
-      <p>This dashboard uses live data for VIX (via AlphaVantage) and the 2s/10s yield curve (via FRED).</p>
+  <!-- Gauge -->
+  <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h2 class="text-xl font-semibold mb-4">Overall Risk Level</h2>
+    <div class="text-center">
+      <span id="risk-level" class="text-2xl font-bold">Calculating…</span>
+      <p id="risk-score" class="text-gray-600">Total Score 0/20</p>
+      <button onclick="fetchData()"
+              class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Refresh Data
+      </button>
     </div>
   </div>
 
-  <script>
-    // 1) Define indicators
-    const indicators = [
-      { name:"Yield-Curve (2s/10s)", current:"-30 bps", threshold:"< -50 bps", value:-30, thresholdValue:-50, check:v=>v< -50, severity:0 },
-      { name:"Leading Economic Index (LEI)", current:"-0.5% MoM", threshold:">1% drop", value:-0.5, thresholdValue:-1, check:v=>v< -1, severity:0 },
-      { name:"Earnings Guidance", current:"40% negative", threshold:">50% negative", value:40, thresholdValue:50, check:v=>v>50, severity:0 },
-      { name:"Credit Spreads (IG)", current:"120 bps", threshold:">150 bps", value:120, thresholdValue:150, check:v=>v>150, severity:0 },
-      { name:"VIX", current:"18", threshold:">25 for 3 days", value:18, thresholdValue:25, check:v=>v>25, severity:0 },
-      { name:"Market Breadth", current:"1.2:1 highs/lows", threshold:">2:1 lows/highs", value:1.2, thresholdValue:2, check:v=>v>2, severity:0 },
-      { name:"Fund Flows", current:"$2 B inflows", threshold:">$10 B outflows", value:2, thresholdValue:-10, check:v=>v< -10, severity:0 },
-      { name:"Fed Policy", current:"Neutral", threshold:"Hawkish", value:0, thresholdValue:1, check:v=>v>=1, severity:0 },
-      { name:"Core CPI", current:"2.8%", threshold:">3%", value:2.8, thresholdValue:3, check:v=>v>3, severity:0 },
-      { name:"Trade Escalations", current:"Current tariffs", threshold:"New tariffs", value:0, thresholdValue:1, check:v=>v>=1, severity:0 },
-    ];
+  <!-- Table -->
+  <div class="bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-xl font-semibold mb-4">Trip-Wire Indicators</h2>
+    <table class="w-full text-left border-collapse">
+      <thead><tr class="bg-gray-200">
+        <th class="p-3">Indicator</th><th class="p-3">Current</th>
+        <th class="p-3">Threshold</th><th class="p-3">Status</th><th class="p-3">Severity</th>
+      </tr></thead>
+      <tbody id="trip-wire-table"></tbody>
+    </table>
+  </div>
+</div>
 
-    // 2) Pull live data
-    async function fetchData() {
-      const alphaKey = "24C19NQFT0CEY88B";
-      const fredKey  = "d49ebc25ed38d212a6a4b8af90abcedf";
+<script>
+const indicators = [
+  {name:"Yield-Curve (2s/10s)",current:"–",threshold:"< -50 bps",
+   value:0,thresholdValue:-50,check:v=>v<-50,severity:0},
+  {name:"VIX",current:"–",threshold:">25 for 3 days",
+   value:0,thresholdValue:25,check:v=>v>25,severity:0},
+];
 
-      try {
-        // VIX via AlphaVantage (VIXY)
-        let r = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=VIXY&apikey=${alphaKey}`);
-        let j = await r.json();
-        let v = parseFloat(j["Global Quote"]["05. price"]);
-        if(!isNaN(v)){
-          let x = indicators.find(i=>i.name==="VIX");
-          x.current = v.toFixed(2); x.value = v;
-        }
+async function fetchData(){
+  const key="24C19NQFT0CEY88B";
 
-        // 10Y Treasury via FRED
-        r = await fetch(
-          `https://api.stlouisfed.org/fred/series/observations?series_id=GS10`
-          + `&api_key=${fredKey}&file_type=json&sort_order=desc`
-        );
-        j = await r.json();
-        let y10 = parseFloat(j.observations[0].value);
-
-        // 2Y Treasury via FRED
-        r = await fetch(
-          `https://api.stlouisfed.org/fred/series/observations?series_id=GS2`
-          + `&api_key=${fredKey}&file_type=json&sort_order=desc`
-        );
-        j = await r.json();
-        let y2 = parseFloat(j.observations[0].value);
-
-        if(!isNaN(y10) && !isNaN(y2)){
-          let spread = y10 - y2;
-          let x = indicators.find(i=>i.name.includes("Yield-Curve"));
-          x.current = spread.toFixed(2) + " bps"; x.value = spread;
-        }
-
-        updateDashboard();
-      }
-      catch(e){
-        console.error("Fetch failed:", e);
-        alert("Live data fetch failed. Try again later.");
-      }
+  try{
+    /* VIX (VIXY ETF as proxy) */
+    let r=await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=VIXY&apikey=${key}`);
+    let j=await r.json();
+    let v=parseFloat(j["Global Quote"]["05. price"]);
+    if(!isNaN(v)){
+      let i=indicators.find(x=>x.name==="VIX");
+      i.current=v.toFixed(2);
+      i.value=v;
     }
 
-    // 3) Render rows & gauge
-    function updateDashboard(){
-      const tbody = document.getElementById("trip-wire-table");
-      tbody.innerHTML = "";
-      let total = 0;
+    /* 10-year yield */
+    r=await fetch(`https://www.alphavantage.co/query?function=TREASURY_YIELD&interval=daily&maturity=10year&apikey=${key}`);
+    j=await r.json();
+    let y10=parseFloat(j.data[0].value);
 
-      indicators.forEach(ind => {
-        ind.severity = ind.check(ind.value)
-          ? (ind.value > ind.thresholdValue*1.5 ? 2 : 1)
-          : 0;
-        total += ind.severity;
+    /* 2-year yield */
+    r=await fetch(`https://www.alphavantage.co/query?function=TREASURY_YIELD&interval=daily&maturity=2year&apikey=${key}`);
+    j=await r.json();
+    let y2=parseFloat(j.data[0].value);
 
-        const txt = ind.severity===0 ? "Safe"
-                  : ind.severity===1 ? "Caution"
-                  : "Alert";
-        const cls = ind.severity===0
-          ? "bg-green-200 text-green-800"
-          : ind.severity===1
-            ? "bg-yellow-200 text-yellow-800"
-            : "bg-red-200 text-red-800";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="p-3">${ind.name}</td>
-          <td class="p-3">${ind.current}</td>
-          <td class="p-3">${ind.threshold}</td>
-          <td class="p-3"><span class="px-2 py-1 rounded ${cls}">${txt}</span></td>
-          <td class="p-3">${ind.severity}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      const level = total<=5  ? "Mild Caution"
-                  : total<=10 ? "Meaningful Caution"
-                  : "Red Alert";
-      const color = total<=5  ? "text-green-600"
-                  : total<=10 ? "text-yellow-600"
-                  : "text-red-600";
-
-      const rl = document.getElementById("risk-level");
-      rl.textContent = level;
-      rl.className   = `text-2xl font-bold ${color}`;
-      document.getElementById("risk-score").textContent = `Total Score: ${total}/20`;
+    if(!isNaN(y10)&&!isNaN(y2)){
+      let spread=y10-y2;
+      let i=indicators.find(x=>x.name.startsWith("Yield-Curve"));
+      i.current=`${spread.toFixed(2)} bps`;
+      i.value=spread;
     }
 
-    // 4) Start it up
-    fetchData();
-  </script>
+    update();
+  }catch(e){console.error(e);alert("Live-data fetch failed.");}
+}
+
+function update(){
+  const tbody=document.getElementById("trip-wire-table");
+  tbody.innerHTML="";
+  let total=0;
+
+  indicators.forEach(ind=>{
+    ind.severity=ind.check(ind.value)?(ind.value>ind.thresholdValue*1.5?2:1):0;
+    total+=ind.severity;
+
+    const txt=ind.severity===0?"Safe":ind.severity===1?"Caution":"Alert";
+    const cls=ind.severity===0?"bg-green-200 text-green-800":
+               ind.severity===1?"bg-yellow-200 text-yellow-800":
+                                 "bg-red-200 text-red-800";
+
+    tbody.insertAdjacentHTML("beforeend",`
+      <tr>
+        <td class="p-3">${ind.name}</td>
+        <td class="p-3">${ind.current}</td>
+        <td class="p-3">${ind.threshold}</td>
+        <td class="p-3"><span class="px-2 py-1 rounded ${cls}">${txt}</span></td>
+        <td class="p-3">${ind.severity}</td>
+      </tr>`);
+  });
+
+  const level = total<=1?"Safe":total<=3?"Mild Caution":total<=5?"Meaningful Caution":"Red Alert";
+  const color = total<=1?"text-green-600":total<=3?"text-yellow-600":total<=5?"text-orange-600":"text-red-600";
+
+  document.getElementById("risk-level").textContent=level;
+  document.getElementById("risk-level").className=`text-2xl font-bold ${color}`;
+  document.getElementById("risk-score").textContent=`Total Score: ${total}/20`;
+}
+
+fetchData();
+</script>
 </body>
 </html>
