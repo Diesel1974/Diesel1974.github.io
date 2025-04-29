@@ -450,6 +450,69 @@ function initCharts() {
         }
       }
     }
+      });
+}
+
+// Simulate new data for indicators
+function simulateNewData() {
+  // Update timestamp
+  document.getElementById('update-time').textContent = new Date().toLocaleString();
+  
+  // Simulate changes to indicator values
+  indicators.forEach(indicator => {
+    // Random change between -10% and +10% of the threshold value
+    const changePercent = (Math.random() * 0.2) - 0.1;
+    const change = indicator.thresholdValue * changePercent;
+    
+    // Apply change
+    indicator.value += change;
+    
+    // Format and update current value display
+    if (indicator.name === "Yield-Curve (2s/10s)") {
+      indicator.current = `${indicator.value.toFixed(0)} bps`;
+      // Update yield curve history
+      indicator.history.shift();
+      indicator.history.push(indicator.value);
+      
+      // Update yield curve chart
+      window.yieldCurveChart.data.datasets[0].data = indicator.history;
+      window.yieldCurveChart.update();
+      
+      // Update yield curve value display
+      document.getElementById('yield-curve-value').textContent = `${indicator.value.toFixed(0)} bps`;
+    } 
+    else if (indicator.name === "VIX") {
+      indicator.current = `${indicator.value.toFixed(2)}`;
+      
+      // Update VIX history
+      indicator.history.shift();
+      indicator.history.push(indicator.value);
+      
+      // Update VIX chart
+      window.vixChart.data.datasets[0].data = indicator.history;
+      window.vixChart.update();
+      
+      // Update VIX value display
+      document.getElementById('vix-value').textContent = indicator.value.toFixed(2);
+    }
+    else if (indicator.name === "Leading Economic Index (LEI)") {
+      indicator.current = `${indicator.value.toFixed(1)}% MoM`;
+    }
+    else if (indicator.name === "Earnings Guidance") {
+      indicator.current = `${indicator.value.toFixed(0)}% negative`;
+    }
+    else if (indicator.name === "Credit Spreads (IG)") {
+      indicator.current = `${indicator.value.toFixed(0)} bps`;
+    }
+    else if (indicator.name === "Market Breadth") {
+      indicator.current = `${indicator.value.toFixed(1)}:1 highs/lows`;
+    }
+    else if (indicator.name === "Fund Flows") {
+      indicator.current = `${indicator.value.toFixed(0)}B ${indicator.value >= 0 ? 'inflows' : 'outflows'}`;
+    }
+    else if (indicator.name === "Core CPI") {
+      indicator.current = `${indicator.value.toFixed(1)}%`;
+    }
   });
   
   // Historical risk chart
