@@ -1,28 +1,35 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-gray-100 dark:bg-gray-900">
+<html lang="en" class="bg-gray-100">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>S&P 500 Trip-Wire Dashboard</title>
+  <!-- Load Tailwind CSS from CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Load Chart.js from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <!-- Configure Tailwind AFTER it loads -->
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.tailwind) {
+        window.tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                primary: {
+                  50: '#eef2ff',
+                  100: '#e0e7ff',
+                  500: '#6366f1',
+                  600: '#4f46e5',
+                  700: '#4338ca',
+                }
+              }
             }
           }
-        }
+        };
       }
-    }
+    });
   </script>
 </head>
 
