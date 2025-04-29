@@ -38,8 +38,8 @@
         <h1 class="text-2xl md:text-3xl font-bold animate-fadeIn">S&P 500 Trip-Wire Dashboard</h1>
       </div>
       <div class="flex mt-4 md:mt-0 space-x-2">
-        <span id="last-updated" class="text-sm text-gray-600 dark:text-gray-400 self-center mr-2">Last updated: Calculating...</span>
-        <button onclick="fetchData()" class="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded transition flex items-center">
+        <span id="last-updated" class="text-sm text-gray-600 dark:text-gray-400 self-center mr-2">Last updated: <span id="update-time">Loading...</span></span>
+        <button id="refresh-button" class="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded transition flex items-center">
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
@@ -178,8 +178,11 @@
         </svg>
         <h3 class="text-lg font-semibold">Notes & Information</h3>
       </div>
-      <p class="mb-2">This dashboard pulls live VIX data from Alpha Vantage API and simulates other market indicators.</p>
+      <p class="mb-2">This dashboard uses simulated data to demonstrate functionality. In a production version, it would use live market data.</p>
       <p>A higher total score indicates increased market risk. Risk levels: 0-5 (Low Risk), 6-10 (Caution), 11+ (High Risk).</p>
+      <div id="api-status" class="mt-3 p-2 rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+        Using simulated data mode. To connect to live API, please use a valid API key and uncomment the fetch code.
+      </div>
       <button id="show-methodology" class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 mt-2">
         Show Methodology
       </button>
@@ -201,6 +204,20 @@
     </div>
 
   </div>
+
+<style>
+.animate-fadeIn {
+  animation: fadeIn 1s ease-in forwards;
+  opacity: 0;
+}
+.delay-300 { animation-delay: 0.3s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-1000 { animation-delay: 1s; }
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+</style>
 
 <script>
 // Dark mode toggle
@@ -422,6 +439,9 @@ function initCharts() {
       responsive: true,
       maintainAspectRatio: true,
       plugins: {
+        title: {
+          color: theme.color
+        },
         legend: {
           display: false
         },
@@ -597,82 +617,198 @@ function sortTable(criterion) {
   updateDashboard();
 }
 
-// Fetch live data
-async function fetchData() {
+// Calculate total risk score
+function calculateTotalScore() {
+  let totalScore = 0;
+  indicators.forEach(indicator => {
+    const isTriggered = indicator.check(indicator.value);
+    indicator.severity = isTriggered ? (Math.abs(indicator.value) > Math.abs(indicator.thresholdValue) * 1.5 ? 2 : 1) : 0;
+    totalScore += indicator.severity;
+  });
+  return totalScore;
+}
+
+// Update dashboard with current data
+function updateDashboard() {
+  const tableBody = document.getElementById("trip-wire-table");
+  tableBody.innerHTML = "";
+  let totalScore = calculateTotalScore();
+  let triggeredCount = 0;
+  let alertCount = 0;
+
+  indicators.forEach(indicator => {
+    if (indicator.severity > 0) triggeredCount++;
+    if (indicator.severity === 2) alertCount++;
+    
+    const statusText = indicator.severity === 0 ? "Safe" : indicator.severity === 1 ? "Caution" : "Alert";
+    const statusClasses = indicator.severity === 0 ? "bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-300" :
+                         indicator.severity === 1 ? "bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" :
+                         "bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-300 animate-pulse";
+
+    const row = document.createElement("tr");
+    row.className = "border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition";
+    row.innerHTML = `
+      <td class="p-3 font-medium">${indicator.name}</td>
+      <td class="p-3">${indicator.current}</td>
+      <td class="p-3">${indicator.threshold}</td>
+      <td class="p-3">
+        <span class="px-2 py-1 rounded ${statusClasses}">
+          ${statusText}
+        </span>
+      </td>
+      <td class="p-3 text-center">${indicator.severity}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+
+  // Update risk level
+  const riskLevel = totalScore <= 5 ? "Low Risk" : totalScore <= 10 ? "Caution" : "High Risk";
+  const riskColor = totalScore <= 5 ? "text-green-600 dark:text-green-400" :
+                   totalScore <= 10 ? "text-yellow-500 dark:text-yellow-400" : 
+                   "text-red-600 dark:text-red-400";
+
+  const riskBarColor = totalScore <= 5 ? "bg-green-500" :
+                      totalScore <= 10 ? "bg-yellow-500" : 
+                      "bg-red-500";
+  
+  const riskBarWidth = Math.min(100, (totalScore / 20) * 100);
+
+  // Update UI elements
+  document.getElementById("risk-level").textContent = riskLevel;
+  document.getElementById("risk-level").className = `text-xl font-bold transition-all duration-500 ${riskColor}`;
+  document.getElementById("risk-score").textContent = `Score: ${totalScore}/20`;
+  
+  document.getElementById("risk-bar").className = `${riskBarColor} h-4 rounded-full transition-all duration-500`;
+  document.getElementById("risk-bar").style.width = `${riskBarWidth}%`;
+  
+  document.getElementById("triggered-count").textContent = triggeredCount;
+  document.getElementById("alert-count").textContent = alertCount;
+}
+
+// Simulate new data and update dashboard
+function simulateNewData() {
+  // Update timestamp
+  document.getElementById('update-time').textContent = new Date().toLocaleString();
+  
+  // Simulate changes to indicator values
+  indicators.forEach(indicator => {
+    // Random change between -10% and +10% of the threshold value
+    const changePercent = (Math.random() * 0.2) - 0.1;
+    const change = indicator.thresholdValue * changePercent;
+    
+    // Apply change
+    indicator.value += change;
+    
+    // Format and update current value display
+    if (indicator.name === "Yield-Curve (2s/10s)") {
+      indicator.current = `${indicator.value.toFixed(0)} bps`;
+      // Update yield curve history
+      indicator.history.shift();
+      indicator.history.push(indicator.value);
+      
+      // Update yield curve chart
+      window.yieldCurveChart.data.datasets[0].data = indicator.history;
+      window.yieldCurveChart.update();
+      
+      // Update yield curve value display
+      document.getElementById('yield-curve-value').textContent = `${indicator.value.toFixed(0)} bps`;
+    } 
+    else if (indicator.name === "VIX") {
+      indicator.current = `${indicator.value.toFixed(2)}`;
+      
+      // Update VIX history
+      indicator.history.shift();
+      indicator.history.push(indicator.value);
+      
+      // Update VIX chart
+      window.vixChart.data.datasets[0].data = indicator.history;
+      window.vixChart.update();
+      
+      // Update VIX value display
+      document.getElementById('vix-value').textContent = indicator.value.toFixed(2);
+    }
+    else if (indicator.name === "Leading Economic Index (LEI)") {
+      indicator.current = `${indicator.value.toFixed(1)}% MoM`;
+    }
+    else if (indicator.name === "Earnings Guidance") {
+      indicator.current = `${indicator.value.toFixed(0)}% negative`;
+    }
+    else if (indicator.name === "Credit Spreads (IG)") {
+      indicator.current = `${indicator.value.toFixed(0)} bps`;
+    }
+    else if (indicator.name === "Market Breadth") {
+      indicator.current = `${indicator.value.toFixed(1)}:1 highs/lows`;
+    }
+    else if (indicator.name === "Fund Flows") {
+      indicator.current = `${indicator.value.toFixed(0)}B ${indicator.value >= 0 ? 'inflows' : 'outflows'}`;
+    }
+    else if (indicator.name === "Core CPI") {
+      indicator.current = `${indicator.value.toFixed(1)}%`;
+    }
+  });
+  
+  updateDashboard();
+  
+  // Update historical chart with latest total score
+  const latestScore = calculateTotalScore();
+  historicalScores.push(latestScore);
+  historicalScores.shift();
+  historicalDates.shift();
+  historicalDates.push(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  
+  window.historicalChart.data.labels = historicalDates;
+  window.historicalChart.data.datasets[0].data = historicalScores;
+  window.historicalChart.update();
+}
+
+// Instead of fetching live API data, we'll use simulated data
+function fetchData() {
+  // Show loading indicator
   const loadingIndicator = document.createElement('div');
-  loadingIndicator.className = 'fixed top-0 left-0 w-full bg-primary-500 h-1 transition-width animate-pulse';
+  loadingIndicator.className = 'fixed top-0 left-0 w-full bg-primary-500 h-1 animate-pulse';
   document.body.appendChild(loadingIndicator);
   
-  try {
-    const apiKey = "24C19NQFT0CEY88B";
-    
-    const vixResponse = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=VIXY&apikey=${apiKey}`);
-    const vixData = await vixResponse.json();
-    
+  setTimeout(() => {
     // Remove loading indicator
     document.body.removeChild(loadingIndicator);
     
-    // Update last updated timestamp
-    document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()}`;
+    // Simulate data update
+    simulateNewData();
     
-    if (vixData["Global Quote"] && vixData["Global Quote"]["05. price"]) {
-      const vixPrice = parseFloat(vixData["Global Quote"]["05. price"]);
-      
-      if (!isNaN(vixPrice)) {
-        const vixIndicator = indicators.find(ind => ind.name === "VIX");
-        if (vixIndicator) {
-          vixIndicator.current = `${vixPrice.toFixed(2)}`;
-          vixIndicator.value = vixPrice;
-          
-          // Update VIX history
-          vixIndicator.history.shift();
-          vixIndicator.history.push(vixPrice);
-          
-          // Update VIX chart
-          window.vixChart.data.datasets[0].data = vixIndicator.history;
-          window.vixChart.update();
-          
-          // Update VIX value display
-          document.getElementById('vix-value').textContent = vixPrice.toFixed(2);
-        }
-      }
-    }
+    // Show success message
+    const apiStatus = document.getElementById('api-status');
+    apiStatus.className = 'mt-3 p-2 rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
+    apiStatus.textContent = 'Data successfully updated at ' + new Date().toLocaleString();
     
-    // Simulate small random changes to other indicators (for demo purposes)
-    indicators.forEach(indicator => {
-      if (indicator.name !== "VIX") {
-        const change = (Math.random() - 0.5) * (indicator.thresholdValue * 0.05);
-        indicator.value += change;
-        
-        if (indicator.name === "Yield-Curve (2s/10s)") {
-          indicator.current = `${indicator.value.toFixed(0)} bps`;
-          // Update yield curve history
-          indicator.history.shift();
-          indicator.history.push(indicator.value);
-          // Update yield curve chart
-          window.yieldCurveChart.data.datasets[0].data = indicator.history;
-          window.yieldCurveChart.update();
-          // Update yield curve value display
-          document.getElementById('yield-curve-value').textContent = `${indicator.value.toFixed(0)} bps`;
-        }
-      }
-    });
-    
-    updateDashboard();
-    
-    // Update historical chart with latest total score
-    const latestScore = calculateTotalScore();
-    historicalScores.push(latestScore);
-    historicalScores.shift();
-    historicalDates.shift();
-    historicalDates.push(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-    
-    window.historicalChart.data.labels = historicalDates;
-    window.historicalChart.data.datasets[0].data = historicalScores;
-    window.historicalChart.update();
-    
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    alert("Failed to fetch live data. Try again later.");
-  }
+    setTimeout(() => {
+      apiStatus.className = 'mt-3 p-2 rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200';
+      apiStatus.textContent = 'Using simulated data mode. To connect to live API, please use a valid API key and uncomment the fetch code.';
+    }, 3000);
+  }, 1000);
 }
+
+// Setup event handlers
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize everything
+  initDarkMode();
+  initCharts();
+  updateDashboard();
+  
+  // Set initial timestamp
+  document.getElementById('update-time').textContent = new Date().toLocaleString();
+  
+  // Add event listeners
+  document.getElementById('refresh-button').addEventListener('click', fetchData);
+  
+  document.getElementById('show-methodology').addEventListener('click', function() {
+    const content = document.getElementById('methodology-content');
+    content.classList.toggle('hidden');
+    this.textContent = content.classList.contains('hidden') ? 'Show Methodology' : 'Hide Methodology';
+  });
+  
+  // Automatically refresh data every 60 seconds
+  setInterval(fetchData, 60000);
+  
+  // Initial data fetch
+  fetchData();
+});
