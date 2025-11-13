@@ -81,6 +81,29 @@
           Welcome to Python Quest! Let's start with the basics. In Python, we can print text to the screen using the <code class="bg-gray-100 px-2 py-1 rounded">print()</code> function.
         </div>
 
+        <!-- Interactive Example Section -->
+        <div id="example-section" class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-bold text-green-900">📖 Example</h3>
+            <button id="try-example-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition">
+              ▶️ Try This Example
+            </button>
+          </div>
+          <pre id="example-code" class="bg-white p-3 rounded text-sm font-mono overflow-x-auto text-gray-800"></pre>
+          <p id="example-explanation" class="text-green-800 mt-2 text-sm"></p>
+        </div>
+
+        <!-- Step by Step Tutorial -->
+        <div id="tutorial-section" class="bg-purple-50 border-l-4 border-purple-500 p-4 mb-4">
+          <button id="toggle-tutorial-btn" class="font-bold text-purple-900 mb-2 flex items-center justify-between w-full">
+            <span>📚 Step-by-Step Tutorial</span>
+            <span id="tutorial-arrow">▼</span>
+          </button>
+          <div id="tutorial-content" class="text-purple-800 text-sm space-y-2 mt-2 hidden">
+            <!-- Steps will be dynamically loaded -->
+          </div>
+        </div>
+
         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
           <h3 class="font-bold text-blue-900 mb-2">🎯 Your Mission:</h3>
           <p id="level-objective" class="text-blue-800">Write code that prints "Hello, Python!" to the console.</p>
@@ -100,9 +123,14 @@
           </ul>
         </div>
 
-        <button id="show-solution-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition w-full">
-          🔍 Show Solution
-        </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="show-solution-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition">
+            🔍 Show Solution
+          </button>
+          <button id="explain-error-btn" class="bg-orange-300 hover:bg-orange-400 text-gray-800 px-4 py-2 rounded transition hidden">
+            🤔 Explain My Error
+          </button>
+        </div>
       </div>
 
       <!-- Code Editor Panel -->
@@ -200,18 +228,35 @@
           "Working with strings (text)",
           "Basic Python syntax"
         ],
+        example: {
+          code: "print('Welcome to Python!')",
+          explanation: "This code uses print() to display text. The text goes inside quotes (either 'single' or \"double\" quotes work!)"
+        },
+        tutorial: [
+          "Step 1: Type the word <code>print</code> - this is a function that displays text",
+          "Step 2: Add parentheses <code>()</code> after print - functions need these!",
+          "Step 3: Inside the parentheses, type your text in quotes: <code>'Hello, Python!'</code>",
+          "Step 4: Your final code should look like: <code>print('Hello, Python!')</code>",
+          "Step 5: Click 'Run Code' to see your text appear in the output!"
+        ],
+        commonMistakes: [
+          "Forgetting quotes around text → <code>print(Hello)</code> ❌",
+          "Missing parentheses → <code>print 'Hello'</code> ❌",
+          "Typo in print → <code>prit('Hello')</code> ❌"
+        ],
         starterCode: "# Write your code below\n",
         solution: "print('Hello, Python!')",
         tests: [
           {
             name: "Prints 'Hello, Python!'",
-            check: (output) => output.trim() === "Hello, Python!"
+            check: (output) => output.trim() === "Hello, Python!",
+            errorHelp: "Make sure you're printing exactly 'Hello, Python!' with the comma and exclamation mark!"
           }
         ]
       },
       {
         title: "Level 2: Variables and Numbers",
-        description: "Variables are like containers that store values. In Python, you can create a variable by giving it a name and assigning a value using the equals sign (=).",
+        description: "Variables are like containers that store values. In Python, you can create a variable by giving it a name and assigning a value using the equals sign (=). Think of a variable like a labeled box where you can store information!",
         objective: "Create a variable called 'age' and set it to your age, then print it.",
         hint: "Create a variable: age = 25, then print it using: print(age)",
         concepts: [
@@ -219,22 +264,40 @@
           "Storing numbers",
           "Printing variables"
         ],
+        example: {
+          code: "score = 100\nprint(score)",
+          explanation: "First line creates a variable 'score' and stores 100 in it. Second line prints what's stored in 'score'. Notice: no quotes when printing variables!"
+        },
+        tutorial: [
+          "Step 1: Choose a variable name - in this case: <code>age</code>",
+          "Step 2: Use the equals sign <code>=</code> to assign a value",
+          "Step 3: Type a number (your age), like: <code>age = 25</code>",
+          "Step 4: On the next line, print the variable: <code>print(age)</code>",
+          "Step 5: Important! Don't put quotes around the variable name when printing it"
+        ],
+        commonMistakes: [
+          "Putting quotes around variable name → <code>print('age')</code> prints 'age' not 25 ❌",
+          "No equals sign → <code>age 25</code> ❌",
+          "Spaces in variable name → <code>my age = 25</code> ❌"
+        ],
         starterCode: "# Create a variable called 'age'\n# Set it to your age\n# Print the variable\n",
         solution: "age = 25\nprint(age)",
         tests: [
           {
             name: "Creates a variable named 'age'",
-            check: (output, code) => /age\s*=\s*\d+/.test(code)
+            check: (output, code) => /age\s*=\s*\d+/.test(code),
+            errorHelp: "Make sure to create a variable called 'age' and set it equal to a number, like: age = 25"
           },
           {
             name: "Prints a number",
-            check: (output) => /^\d+$/.test(output.trim())
+            check: (output) => /^\d+$/.test(output.trim()),
+            errorHelp: "Your code should print just a number. Make sure you're printing the variable: print(age) without quotes!"
           }
         ]
       },
       {
         title: "Level 3: String Formatting",
-        description: "You can combine variables with text using string formatting. The f-string method is modern and easy to use. Just put an 'f' before the quotes and use {variable_name} to insert variables.",
+        description: "You can combine variables with text using string formatting. The f-string method is modern and easy to use. Just put an 'f' before the quotes and use {variable_name} to insert variables. This is super powerful for creating dynamic messages!",
         objective: "Create a variable 'name' with your name, then print 'My name is [your name]' using an f-string.",
         hint: "Use f-strings: name = 'Alice' then print(f'My name is {name}')",
         concepts: [
@@ -242,20 +305,39 @@
           "Combining text and variables",
           "Modern Python syntax"
         ],
+        example: {
+          code: "city = 'Paris'\nprint(f'I live in {city}')",
+          explanation: "The 'f' before the quote makes it an f-string. The {city} gets replaced with the actual value ('Paris'). Output: 'I live in Paris'"
+        },
+        tutorial: [
+          "Step 1: Create a variable with your name: <code>name = 'Alice'</code>",
+          "Step 2: Start your print statement: <code>print(</code>",
+          "Step 3: Add 'f' before the opening quote: <code>print(f'</code>",
+          "Step 4: Type your message with curly braces for the variable: <code>print(f'My name is {name}')</code>",
+          "Step 5: Close with parenthesis and run! The {name} will be replaced with 'Alice'"
+        ],
+        commonMistakes: [
+          "Forgetting the 'f' → <code>print('My name is {name}')</code> prints literal text ❌",
+          "Wrong brackets → <code>print(f'My name is [name]')</code> uses [ ] instead of { } ❌",
+          "Quotes around variable → <code>print(f'My name is {'name'}')</code> ❌"
+        ],
         starterCode: "# Create a variable called 'name'\n# Use an f-string to print 'My name is [your name]'\n",
         solution: "name = 'Alice'\nprint(f'My name is {name}')",
         tests: [
           {
             name: "Creates a variable named 'name'",
-            check: (output, code) => /name\s*=/.test(code)
+            check: (output, code) => /name\s*=/.test(code),
+            errorHelp: "Start by creating a variable: name = 'YourName'"
           },
           {
             name: "Uses f-string formatting",
-            check: (output, code) => /f['"].*\{.*\}.*['"]/.test(code)
+            check: (output, code) => /f['"].*\{.*\}.*['"]/.test(code),
+            errorHelp: "Use an f-string! Put 'f' before the quotes and use {name} inside: print(f'My name is {name}')"
           },
           {
             name: "Output contains 'My name is'",
-            check: (output) => output.includes("My name is")
+            check: (output) => output.includes("My name is"),
+            errorHelp: "Your output should include the text 'My name is' followed by your name"
           }
         ]
       },
@@ -507,10 +589,35 @@
         conceptsList.appendChild(li);
       });
 
+      // Load example
+      if (level.example) {
+        document.getElementById('example-code').textContent = level.example.code;
+        document.getElementById('example-explanation').textContent = level.example.explanation;
+        document.getElementById('example-section').classList.remove('hidden');
+      } else {
+        document.getElementById('example-section').classList.add('hidden');
+      }
+
+      // Load tutorial
+      if (level.tutorial) {
+        const tutorialContent = document.getElementById('tutorial-content');
+        tutorialContent.innerHTML = '';
+        level.tutorial.forEach((step, index) => {
+          const stepDiv = document.createElement('div');
+          stepDiv.innerHTML = step;
+          stepDiv.className = 'py-1';
+          tutorialContent.appendChild(stepDiv);
+        });
+        document.getElementById('tutorial-section').classList.remove('hidden');
+      } else {
+        document.getElementById('tutorial-section').classList.add('hidden');
+      }
+
       document.getElementById('code-editor').value = level.starterCode;
       document.getElementById('output').innerHTML = '<div class="text-gray-500">Click "Run Code" to see the output...</div>';
       document.getElementById('test-results').classList.add('hidden');
       document.getElementById('success-message').classList.add('hidden');
+      document.getElementById('explain-error-btn').classList.add('hidden');
 
       updateProgressBar();
     }
@@ -573,22 +680,41 @@
       testResultsDiv.classList.remove('hidden');
 
       let allPassed = true;
+      let failedTests = [];
 
       level.tests.forEach((test, index) => {
         const passed = test.check(output, code);
         allPassed = allPassed && passed;
 
+        if (!passed) {
+          failedTests.push(test);
+        }
+
         const testDiv = document.createElement('div');
-        testDiv.className = `flex items-center p-3 rounded ${passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
-        testDiv.innerHTML = `
-          <span class="text-xl mr-2">${passed ? '✅' : '❌'}</span>
-          <span>${test.name}</span>
+        testDiv.className = `flex flex-col p-3 rounded ${passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+
+        let testHTML = `
+          <div class="flex items-center">
+            <span class="text-xl mr-2">${passed ? '✅' : '❌'}</span>
+            <span class="font-semibold">${test.name}</span>
+          </div>
         `;
+
+        // Add error help if test failed and has errorHelp
+        if (!passed && test.errorHelp) {
+          testHTML += `<div class="mt-2 ml-8 text-sm">${test.errorHelp}</div>`;
+        }
+
+        testDiv.innerHTML = testHTML;
         testListDiv.appendChild(testDiv);
       });
 
       if (allPassed) {
         showSuccess();
+        document.getElementById('explain-error-btn').classList.add('hidden');
+      } else {
+        // Show the "Explain My Error" button if tests failed
+        document.getElementById('explain-error-btn').classList.remove('hidden');
       }
     }
 
@@ -694,6 +820,46 @@
         updateStats();
         saveProgress();
       }
+    });
+
+    // Try Example button
+    document.getElementById('try-example-btn').addEventListener('click', () => {
+      const level = levels[currentLevel];
+      if (level.example) {
+        document.getElementById('code-editor').value = level.example.code;
+        runCode();
+      }
+    });
+
+    // Toggle Tutorial button
+    document.getElementById('toggle-tutorial-btn').addEventListener('click', () => {
+      const tutorialContent = document.getElementById('tutorial-content');
+      const arrow = document.getElementById('tutorial-arrow');
+      tutorialContent.classList.toggle('hidden');
+      arrow.textContent = tutorialContent.classList.contains('hidden') ? '▼' : '▲';
+    });
+
+    // Explain Error button
+    document.getElementById('explain-error-btn').addEventListener('click', () => {
+      const level = levels[currentLevel];
+      let errorMessage = "Let's figure out what went wrong:\n\n";
+
+      // Show common mistakes
+      if (level.commonMistakes) {
+        errorMessage += "Common mistakes to avoid:\n";
+        level.commonMistakes.forEach(mistake => {
+          errorMessage += "• " + mistake.replace(/<[^>]*>/g, '') + "\n";
+        });
+      }
+
+      errorMessage += "\nTry checking:\n";
+      errorMessage += "• Spelling and capitalization\n";
+      errorMessage += "• Quotes around text\n";
+      errorMessage += "• Parentheses and syntax\n";
+      errorMessage += "• Variable names\n\n";
+      errorMessage += "Need more help? Click 'Show Solution' to see the answer!";
+
+      alert(errorMessage);
     });
 
     // Keyboard shortcut: Ctrl+Enter to run code
