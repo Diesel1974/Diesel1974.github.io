@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python Quest - Learn to Code</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/skulpt@1.2.0/dist/skulpt.min.js"></script>
+  <script src="https://unpkg.com/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(-100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .animate-slideIn {
+      animation: slideIn 0.5s ease-out forwards;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-custom {
+      animation: bounce 1s infinite;
+    }
+    .code-editor {
+      font-family: 'Courier New', monospace;
+      tab-size: 4;
+    }
+    .level-complete {
+      animation: pulse 0.5s ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <header class="text-center mb-8 animate-fadeIn">
+      <h1 class="text-5xl font-bold text-indigo-600 mb-2">🐍 Python Quest</h1>
+      <p class="text-xl text-gray-700">Master Python through interactive coding challenges!</p>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="bg-white rounded-lg shadow-lg p-4 mb-6 animate-slideIn">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-lg font-semibold text-gray-800">Progress</h2>
+        <span id="progress-text" class="text-sm text-gray-600">Level 1 of 10</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-4">
+        <div id="progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-4 rounded-full transition-all duration-500" style="width: 10%"></div>
+      </div>
+      <div class="mt-2 flex gap-1">
+        <div id="level-badges" class="flex gap-1 flex-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Main Game Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Instructions Panel -->
+      <div class="bg-white rounded-lg shadow-lg p-6 animate-fadeIn">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold text-indigo-600">
+            <span id="level-title">Level 1: Hello, Python!</span>
+          </h2>
+          <span id="level-score" class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full font-bold">⭐ 0</span>
+        </div>
+
+        <div id="level-description" class="mb-6 text-gray-700 leading-relaxed">
+          Welcome to Python Quest! Let's start with the basics. In Python, we can print text to the screen using the <code class="bg-gray-100 px-2 py-1 rounded">print()</code> function.
+        </div>
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+          <h3 class="font-bold text-blue-900 mb-2">🎯 Your Mission:</h3>
+          <p id="level-objective" class="text-blue-800">Write code that prints "Hello, Python!" to the console.</p>
+        </div>
+
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+          <h3 class="font-bold text-yellow-900 mb-2">💡 Hint:</h3>
+          <p id="level-hint" class="text-yellow-800">Use the print() function with your text inside quotes.</p>
+        </div>
+
+        <div class="mb-4">
+          <h3 class="font-bold text-gray-800 mb-2">📚 What You'll Learn:</h3>
+          <ul id="level-concepts" class="list-disc list-inside text-gray-700 space-y-1">
+            <li>How to use the print() function</li>
+            <li>Working with strings (text)</li>
+            <li>Basic Python syntax</li>
+          </ul>
+        </div>
+
+        <button id="show-solution-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition w-full">
+          🔍 Show Solution
+        </button>
+      </div>
+
+      <!-- Code Editor Panel -->
+      <div class="bg-white rounded-lg shadow-lg p-6 animate-fadeIn">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-indigo-600">Code Editor</h2>
+          <div class="flex gap-2">
+            <button id="reset-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-2 rounded transition text-sm">
+              🔄 Reset
+            </button>
+            <button id="run-btn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded transition font-bold">
+              ▶️ Run Code
+            </button>
+          </div>
+        </div>
+
+        <textarea
+          id="code-editor"
+          class="code-editor w-full h-64 p-4 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none resize-none"
+          placeholder="# Write your Python code here..."
+          spellcheck="false"
+        ></textarea>
+
+        <!-- Output Panel -->
+        <div class="mt-4">
+          <h3 class="text-lg font-bold text-gray-800 mb-2">Output:</h3>
+          <div id="output" class="bg-gray-900 text-green-400 p-4 rounded-lg min-h-32 font-mono text-sm overflow-auto">
+            <div class="text-gray-500">Click "Run Code" to see the output...</div>
+          </div>
+        </div>
+
+        <!-- Test Results -->
+        <div id="test-results" class="mt-4 hidden">
+          <h3 class="text-lg font-bold text-gray-800 mb-2">Test Results:</h3>
+          <div id="test-list" class="space-y-2"></div>
+        </div>
+
+        <!-- Success Message -->
+        <div id="success-message" class="mt-4 bg-green-100 border-l-4 border-green-500 p-4 rounded hidden">
+          <div class="flex items-center">
+            <span class="text-3xl mr-3">🎉</span>
+            <div>
+              <h3 class="font-bold text-green-900">Level Complete!</h3>
+              <p class="text-green-800">Great job! You've mastered this concept.</p>
+            </div>
+          </div>
+          <button id="next-level-btn" class="mt-3 bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded transition font-bold w-full">
+            Next Level →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard/Stats -->
+    <div class="mt-6 bg-white rounded-lg shadow-lg p-6 animate-fadeIn">
+      <h2 class="text-2xl font-bold text-indigo-600 mb-4">Your Stats</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="text-center p-4 bg-purple-50 rounded-lg">
+          <div class="text-3xl font-bold text-purple-600" id="total-stars">0</div>
+          <div class="text-sm text-gray-600">Total Stars</div>
+        </div>
+        <div class="text-center p-4 bg-blue-50 rounded-lg">
+          <div class="text-3xl font-bold text-blue-600" id="levels-completed">0</div>
+          <div class="text-sm text-gray-600">Levels Completed</div>
+        </div>
+        <div class="text-center p-4 bg-green-50 rounded-lg">
+          <div class="text-3xl font-bold text-green-600" id="code-runs">0</div>
+          <div class="text-sm text-gray-600">Code Runs</div>
+        </div>
+        <div class="text-center p-4 bg-yellow-50 rounded-lg">
+          <div class="text-3xl font-bold text-yellow-600" id="hints-used">0</div>
+          <div class="text-sm text-gray-600">Hints Used</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Game State
+    let currentLevel = 0;
+    let totalStars = 0;
+    let levelsCompleted = 0;
+    let codeRuns = 0;
+    let hintsUsed = 0;
+
+    // Level Definitions
+    const levels = [
+      {
+        title: "Level 1: Hello, Python!",
+        description: "Welcome to Python Quest! Let's start with the basics. In Python, we can print text to the screen using the <code class='bg-gray-100 px-2 py-1 rounded'>print()</code> function.",
+        objective: "Write code that prints 'Hello, Python!' to the console.",
+        hint: "Use the print() function with your text inside quotes. Example: print('your text here')",
+        concepts: [
+          "How to use the print() function",
+          "Working with strings (text)",
+          "Basic Python syntax"
+        ],
+        starterCode: "# Write your code below\n",
+        solution: "print('Hello, Python!')",
+        tests: [
+          {
+            name: "Prints 'Hello, Python!'",
+            check: (output) => output.trim() === "Hello, Python!"
+          }
+        ]
+      },
+      {
+        title: "Level 2: Variables and Numbers",
+        description: "Variables are like containers that store values. In Python, you can create a variable by giving it a name and assigning a value using the equals sign (=).",
+        objective: "Create a variable called 'age' and set it to your age, then print it.",
+        hint: "Create a variable: age = 25, then print it using: print(age)",
+        concepts: [
+          "Creating variables",
+          "Storing numbers",
+          "Printing variables"
+        ],
+        starterCode: "# Create a variable called 'age'\n# Set it to your age\n# Print the variable\n",
+        solution: "age = 25\nprint(age)",
+        tests: [
+          {
+            name: "Creates a variable named 'age'",
+            check: (output, code) => /age\s*=\s*\d+/.test(code)
+          },
+          {
+            name: "Prints a number",
+            check: (output) => /^\d+$/.test(output.trim())
+          }
+        ]
+      },
+      {
+        title: "Level 3: String Formatting",
+        description: "You can combine variables with text using string formatting. The f-string method is modern and easy to use. Just put an 'f' before the quotes and use {variable_name} to insert variables.",
+        objective: "Create a variable 'name' with your name, then print 'My name is [your name]' using an f-string.",
+        hint: "Use f-strings: name = 'Alice' then print(f'My name is {name}')",
+        concepts: [
+          "String formatting with f-strings",
+          "Combining text and variables",
+          "Modern Python syntax"
+        ],
+        starterCode: "# Create a variable called 'name'\n# Use an f-string to print 'My name is [your name]'\n",
+        solution: "name = 'Alice'\nprint(f'My name is {name}')",
+        tests: [
+          {
+            name: "Creates a variable named 'name'",
+            check: (output, code) => /name\s*=/.test(code)
+          },
+          {
+            name: "Uses f-string formatting",
+            check: (output, code) => /f['"].*\{.*\}.*['"]/.test(code)
+          },
+          {
+            name: "Output contains 'My name is'",
+            check: (output) => output.includes("My name is")
+          }
+        ]
+      },
+      {
+        title: "Level 4: Basic Math",
+        description: "Python can do math! Use +, -, *, / for addition, subtraction, multiplication, and division. The ** operator raises a number to a power.",
+        objective: "Calculate 5 squared (5 to the power of 2) and print the result.",
+        hint: "Use the ** operator: result = 5 ** 2, then print(result)",
+        concepts: [
+          "Arithmetic operators",
+          "Power/exponentiation with **",
+          "Mathematical calculations"
+        ],
+        starterCode: "# Calculate 5 squared (5 ** 2)\n# Print the result\n",
+        solution: "result = 5 ** 2\nprint(result)",
+        tests: [
+          {
+            name: "Prints 25",
+            check: (output) => output.trim() === "25"
+          }
+        ]
+      },
+      {
+        title: "Level 5: User Input",
+        description: "The input() function lets you ask users for information. It returns a string, so you might need to convert it to a number using int() for integers or float() for decimals.",
+        objective: "Ask the user for their favorite number, convert it to an integer, multiply by 2, and print the result.",
+        hint: "Use: number = int(input('Enter a number: ')), then calculate and print number * 2",
+        concepts: [
+          "Getting user input",
+          "Type conversion with int()",
+          "Basic arithmetic"
+        ],
+        starterCode: "# Ask user for their favorite number\n# Convert to integer\n# Multiply by 2 and print\n",
+        solution: "number = int(input('Enter your favorite number: '))\nresult = number * 2\nprint(result)",
+        tests: [
+          {
+            name: "Uses input() function",
+            check: (output, code) => code.includes("input(")
+          },
+          {
+            name: "Converts to integer with int()",
+            check: (output, code) => code.includes("int(")
+          },
+          {
+            name: "Multiplies by 2",
+            check: (output, code) => /\*\s*2/.test(code) || /2\s*\*/.test(code)
+          }
+        ]
+      },
+      {
+        title: "Level 6: Conditionals - If Statements",
+        description: "Conditionals let your code make decisions! Use 'if' to check a condition, 'elif' for additional conditions, and 'else' for everything else. Remember to indent the code inside!",
+        objective: "Create a variable 'temperature' set to 75. If it's greater than 80, print 'Hot!', otherwise print 'Nice!'",
+        hint: "Use: if temperature > 80: print('Hot!') else: print('Nice!')",
+        concepts: [
+          "If statements",
+          "Comparison operators (>)",
+          "Indentation in Python"
+        ],
+        starterCode: "# Set temperature to 75\n# Use if-else to print 'Hot!' or 'Nice!'\n",
+        solution: "temperature = 75\nif temperature > 80:\n    print('Hot!')\nelse:\n    print('Nice!')",
+        tests: [
+          {
+            name: "Creates temperature variable",
+            check: (output, code) => /temperature\s*=/.test(code)
+          },
+          {
+            name: "Uses if statement",
+            check: (output, code) => code.includes("if")
+          },
+          {
+            name: "Prints 'Nice!' (since 75 <= 80)",
+            check: (output) => output.trim() === "Nice!"
+          }
+        ]
+      },
+      {
+        title: "Level 7: Lists",
+        description: "Lists store multiple items in order. Create a list using square brackets []. Access items by their index (starting at 0). You can add items with append().",
+        objective: "Create a list of your 3 favorite foods, then print the first item (index 0).",
+        hint: "foods = ['pizza', 'sushi', 'tacos'] then print(foods[0])",
+        concepts: [
+          "Creating lists",
+          "List indexing",
+          "Accessing list items"
+        ],
+        starterCode: "# Create a list of 3 favorite foods\n# Print the first item (index 0)\n",
+        solution: "foods = ['pizza', 'sushi', 'tacos']\nprint(foods[0])",
+        tests: [
+          {
+            name: "Creates a list",
+            check: (output, code) => /\[.*,.*,.*\]/.test(code)
+          },
+          {
+            name: "Accesses list with [0]",
+            check: (output, code) => /\[0\]/.test(code)
+          },
+          {
+            name: "Prints something",
+            check: (output) => output.trim().length > 0
+          }
+        ]
+      },
+      {
+        title: "Level 8: For Loops",
+        description: "For loops let you repeat code for each item in a sequence. Use 'for item in list:' to loop through a list. Don't forget to indent the code inside the loop!",
+        objective: "Create a list of 3 numbers and print each one using a for loop.",
+        hint: "numbers = [1, 2, 3] then: for num in numbers: print(num)",
+        concepts: [
+          "For loops",
+          "Iterating over lists",
+          "Loop syntax and indentation"
+        ],
+        starterCode: "# Create a list of 3 numbers\n# Use a for loop to print each number\n",
+        solution: "numbers = [1, 2, 3]\nfor num in numbers:\n    print(num)",
+        tests: [
+          {
+            name: "Creates a list",
+            check: (output, code) => /\[.*\]/.test(code)
+          },
+          {
+            name: "Uses for loop",
+            check: (output, code) => /for\s+\w+\s+in/.test(code)
+          },
+          {
+            name: "Prints multiple lines",
+            check: (output) => output.split('\n').filter(line => line.trim()).length >= 3
+          }
+        ]
+      },
+      {
+        title: "Level 9: Functions",
+        description: "Functions are reusable blocks of code. Define them with 'def function_name():' and call them by using the function name followed by (). Functions can take parameters and return values.",
+        objective: "Create a function called 'greet' that takes a name parameter and prints 'Hello, [name]!'. Then call it with your name.",
+        hint: "def greet(name): print(f'Hello, {name}!') then call: greet('Alice')",
+        concepts: [
+          "Defining functions with def",
+          "Function parameters",
+          "Calling functions"
+        ],
+        starterCode: "# Define a function called 'greet' with parameter 'name'\n# Make it print 'Hello, [name]!'\n# Call the function with your name\n",
+        solution: "def greet(name):\n    print(f'Hello, {name}!')\n\ngreet('Alice')",
+        tests: [
+          {
+            name: "Defines a function with def",
+            check: (output, code) => /def\s+greet/.test(code)
+          },
+          {
+            name: "Function takes a parameter",
+            check: (output, code) => /def\s+greet\s*\(\s*\w+\s*\)/.test(code)
+          },
+          {
+            name: "Calls the function",
+            check: (output, code) => /greet\s*\(/.test(code)
+          },
+          {
+            name: "Output contains 'Hello'",
+            check: (output) => output.includes("Hello")
+          }
+        ]
+      },
+      {
+        title: "Level 10: The Final Challenge!",
+        description: "Time to put everything together! Let's create a program that combines variables, conditionals, loops, and functions.",
+        objective: "Create a function 'check_numbers' that takes a list of numbers and prints 'Even' for even numbers and 'Odd' for odd numbers. Call it with [1, 2, 3, 4, 5].",
+        hint: "Use the modulo operator (%): if num % 2 == 0 means the number is even. Create a function with a for loop inside.",
+        concepts: [
+          "Combining multiple concepts",
+          "Modulo operator (%)",
+          "Functions with loops and conditionals",
+          "Problem-solving"
+        ],
+        starterCode: "# Define function 'check_numbers' that takes a list\n# Loop through the list\n# Print 'Even' or 'Odd' for each number\n# Call the function with [1, 2, 3, 4, 5]\n",
+        solution: "def check_numbers(numbers):\n    for num in numbers:\n        if num % 2 == 0:\n            print('Even')\n        else:\n            print('Odd')\n\ncheck_numbers([1, 2, 3, 4, 5])",
+        tests: [
+          {
+            name: "Defines a function",
+            check: (output, code) => /def\s+check_numbers/.test(code)
+          },
+          {
+            name: "Uses a for loop",
+            check: (output, code) => /for\s+\w+\s+in/.test(code)
+          },
+          {
+            name: "Uses if statement",
+            check: (output, code) => /if\s+.*%/.test(code)
+          },
+          {
+            name: "Prints correct pattern (Odd, Even, Odd, Even, Odd)",
+            check: (output) => {
+              const lines = output.trim().split('\n');
+              return lines.length >= 5 &&
+                     lines[0].includes('Odd') &&
+                     lines[1].includes('Even') &&
+                     lines[2].includes('Odd') &&
+                     lines[3].includes('Even') &&
+                     lines[4].includes('Odd');
+            }
+          }
+        ]
+      }
+    ];
+
+    // Initialize game
+    function initGame() {
+      loadProgress();
+      loadLevel(currentLevel);
+      updateStats();
+      createLevelBadges();
+    }
+
+    // Create level badges
+    function createLevelBadges() {
+      const badgesContainer = document.getElementById('level-badges');
+      badgesContainer.innerHTML = '';
+
+      levels.forEach((_, index) => {
+        const badge = document.createElement('div');
+        badge.className = `w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+          index < levelsCompleted ? 'bg-green-500 text-white' :
+          index === currentLevel ? 'bg-blue-500 text-white' :
+          'bg-gray-300 text-gray-600'
+        }`;
+        badge.textContent = index + 1;
+        badge.title = `Level ${index + 1}`;
+        badgesContainer.appendChild(badge);
+      });
+    }
+
+    // Load a level
+    function loadLevel(levelIndex) {
+      if (levelIndex >= levels.length) {
+        showGameComplete();
+        return;
+      }
+
+      const level = levels[levelIndex];
+
+      document.getElementById('level-title').textContent = level.title;
+      document.getElementById('level-description').innerHTML = level.description;
+      document.getElementById('level-objective').textContent = level.objective;
+      document.getElementById('level-hint').textContent = level.hint;
+
+      const conceptsList = document.getElementById('level-concepts');
+      conceptsList.innerHTML = '';
+      level.concepts.forEach(concept => {
+        const li = document.createElement('li');
+        li.textContent = concept;
+        conceptsList.appendChild(li);
+      });
+
+      document.getElementById('code-editor').value = level.starterCode;
+      document.getElementById('output').innerHTML = '<div class="text-gray-500">Click "Run Code" to see the output...</div>';
+      document.getElementById('test-results').classList.add('hidden');
+      document.getElementById('success-message').classList.add('hidden');
+
+      updateProgressBar();
+    }
+
+    // Update progress bar
+    function updateProgressBar() {
+      const progress = ((currentLevel) / levels.length) * 100;
+      document.getElementById('progress-bar').style.width = `${Math.max(10, progress)}%`;
+      document.getElementById('progress-text').textContent = `Level ${currentLevel + 1} of ${levels.length}`;
+    }
+
+    // Run code
+    function runCode() {
+      const code = document.getElementById('code-editor').value;
+      const outputDiv = document.getElementById('output');
+
+      outputDiv.innerHTML = '';
+      codeRuns++;
+      updateStats();
+
+      // Configure Skulpt
+      Sk.configure({
+        output: function(text) {
+          outputDiv.innerHTML += text;
+        },
+        read: function(x) {
+          if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+            throw "File not found: '" + x + "'";
+          return Sk.builtinFiles["files"][x];
+        },
+        inputfun: function(prompt) {
+          return window.prompt(prompt);
+        },
+        inputfunTakesPrompt: true
+      });
+
+      // Run the code
+      Sk.misceval.asyncToPromise(function() {
+        return Sk.importMainWithBody("<stdin>", false, code, true);
+      }).then(
+        function(mod) {
+          checkTests();
+        },
+        function(err) {
+          outputDiv.innerHTML = `<div class="text-red-400">Error: ${err.toString()}</div>`;
+        }
+      );
+    }
+
+    // Check tests
+    function checkTests() {
+      const level = levels[currentLevel];
+      const code = document.getElementById('code-editor').value;
+      const output = document.getElementById('output').textContent;
+
+      const testListDiv = document.getElementById('test-list');
+      const testResultsDiv = document.getElementById('test-results');
+
+      testListDiv.innerHTML = '';
+      testResultsDiv.classList.remove('hidden');
+
+      let allPassed = true;
+
+      level.tests.forEach((test, index) => {
+        const passed = test.check(output, code);
+        allPassed = allPassed && passed;
+
+        const testDiv = document.createElement('div');
+        testDiv.className = `flex items-center p-3 rounded ${passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+        testDiv.innerHTML = `
+          <span class="text-xl mr-2">${passed ? '✅' : '❌'}</span>
+          <span>${test.name}</span>
+        `;
+        testListDiv.appendChild(testDiv);
+      });
+
+      if (allPassed) {
+        showSuccess();
+      }
+    }
+
+    // Show success message
+    function showSuccess() {
+      document.getElementById('success-message').classList.remove('hidden');
+      totalStars += 10;
+
+      if (currentLevel >= levelsCompleted) {
+        levelsCompleted = currentLevel + 1;
+      }
+
+      updateStats();
+      saveProgress();
+      createLevelBadges();
+    }
+
+    // Show game complete
+    function showGameComplete() {
+      document.querySelector('.container').innerHTML = `
+        <div class="text-center py-20 animate-fadeIn">
+          <h1 class="text-6xl font-bold text-indigo-600 mb-4">🎉 Congratulations! 🎉</h1>
+          <h2 class="text-3xl text-gray-800 mb-6">You've completed Python Quest!</h2>
+          <div class="text-xl text-gray-700 mb-8">
+            <p>You've earned <span class="font-bold text-yellow-600">${totalStars} stars</span>!</p>
+            <p>You've mastered the fundamentals of Python programming!</p>
+          </div>
+          <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto mb-8">
+            <h3 class="text-2xl font-bold mb-4">What You've Learned:</h3>
+            <div class="grid grid-cols-2 gap-4 text-left">
+              <div>✅ Variables and Data Types</div>
+              <div>✅ String Formatting</div>
+              <div>✅ Mathematical Operations</div>
+              <div>✅ User Input</div>
+              <div>✅ Conditionals (if/else)</div>
+              <div>✅ Lists and Indexing</div>
+              <div>✅ For Loops</div>
+              <div>✅ Functions</div>
+              <div>✅ Problem Solving</div>
+              <div>✅ Code Organization</div>
+            </div>
+          </div>
+          <button onclick="location.reload()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-lg text-xl font-bold transition">
+            🔄 Play Again
+          </button>
+        </div>
+      `;
+    }
+
+    // Update stats display
+    function updateStats() {
+      document.getElementById('total-stars').textContent = totalStars;
+      document.getElementById('levels-completed').textContent = levelsCompleted;
+      document.getElementById('code-runs').textContent = codeRuns;
+      document.getElementById('hints-used').textContent = hintsUsed;
+    }
+
+    // Save progress to localStorage
+    function saveProgress() {
+      localStorage.setItem('pythonQuest', JSON.stringify({
+        currentLevel,
+        totalStars,
+        levelsCompleted,
+        codeRuns,
+        hintsUsed
+      }));
+    }
+
+    // Load progress from localStorage
+    function loadProgress() {
+      const saved = localStorage.getItem('pythonQuest');
+      if (saved) {
+        const data = JSON.parse(saved);
+        currentLevel = data.currentLevel || 0;
+        totalStars = data.totalStars || 0;
+        levelsCompleted = data.levelsCompleted || 0;
+        codeRuns = data.codeRuns || 0;
+        hintsUsed = data.hintsUsed || 0;
+      }
+    }
+
+    // Event Listeners
+    document.getElementById('run-btn').addEventListener('click', runCode);
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      document.getElementById('code-editor').value = levels[currentLevel].starterCode;
+      document.getElementById('output').innerHTML = '<div class="text-gray-500">Click "Run Code" to see the output...</div>';
+      document.getElementById('test-results').classList.add('hidden');
+      document.getElementById('success-message').classList.add('hidden');
+    });
+
+    document.getElementById('next-level-btn').addEventListener('click', () => {
+      currentLevel++;
+      saveProgress();
+      loadLevel(currentLevel);
+      createLevelBadges();
+    });
+
+    document.getElementById('show-solution-btn').addEventListener('click', () => {
+      if (confirm('Are you sure? This will show the solution and you can learn from it!')) {
+        document.getElementById('code-editor').value = levels[currentLevel].solution;
+        hintsUsed++;
+        updateStats();
+        saveProgress();
+      }
+    });
+
+    // Keyboard shortcut: Ctrl+Enter to run code
+    document.getElementById('code-editor').addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        runCode();
+      }
+
+      // Tab key for indentation
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = e.target.selectionStart;
+        const end = e.target.selectionEnd;
+        e.target.value = e.target.value.substring(0, start) + '    ' + e.target.value.substring(end);
+        e.target.selectionStart = e.target.selectionEnd = start + 4;
+      }
+    });
+
+    // Initialize the game when page loads
+    initGame();
+  </script>
+</body>
+</html>
